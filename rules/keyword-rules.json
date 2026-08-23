@@ -1,0 +1,285 @@
+{
+  "version": "0.1.0",
+  "taxonomy": "Gray et al. (2024) five high-level strategies",
+  "notes": [
+    "Layer 1 (text) rules only. Each rule maps to exactly one of the five high-level strategies so the popup can group results consistently (brief 6.3).",
+    "Scarcity, urgency, social proof and anchoring are mechanisms rather than strategies in the Gray et al. table, so they sit under Interface Interference (the interface presents misleading information to steer a decision). The 'mechanism' field carries the psychological 'why' from brief 2.",
+    "Patterns are case-insensitive regular expressions matched against individual visible text nodes. Keep them anchored with \\b so they do not fire inside unrelated words.",
+    "severity is a rough confidence/harm ranking used for popup ordering, not a research claim."
+  ],
+  "rules": [
+    {
+      "id": "false-urgency-low-stock",
+      "category": "Interface Interference",
+      "approach": "False Urgency (Low Stock)",
+      "mechanism": "Scarcity / loss aversion",
+      "severity": "high",
+      "explanation": "This page says stock is nearly gone. Shops often show a low number whether or not it is true, to push you into buying before you have time to think it over.",
+      "patterns": [
+        "\\bonly\\s+\\d+\\s+(left|remaining|in stock|available)",
+        "\\b\\d+\\s+left in stock\\b",
+        "\\balmost sold out\\b",
+        "\\bselling (out )?fast\\b",
+        "\\blow (in )?stock\\b",
+        "\\blimited stock\\b",
+        "\\bwhile stocks last\\b"
+      ]
+    },
+    {
+      "id": "false-urgency-countdown",
+      "category": "Interface Interference",
+      "approach": "False Urgency (Countdown)",
+      "mechanism": "Scarcity / loss aversion",
+      "severity": "high",
+      "explanation": "A countdown or deadline is being used to rush your decision. These timers often reset when the page is reloaded, so the deal may not really be ending.",
+      "patterns": [
+        "\\b(offer|deal|sale|price|discount)s? ends? in\\b",
+        "\\bends in \\d+",
+        "\\bexpires in \\d+",
+        "\\bhurry\\b",
+        "\\blast chance\\b",
+        "\\btoday only\\b",
+        "\\bflash (sale|deal)\\b",
+        "\\blimited[- ]time (offer|only|deal)\\b"
+      ]
+    },
+    {
+      "id": "social-proof-viewers",
+      "category": "Interface Interference",
+      "approach": "Manipulated Social Proof",
+      "mechanism": "Social proof manipulation",
+      "severity": "medium",
+      "explanation": "The page claims other shoppers are looking at or buying this item right now. These counts are often produced automatically rather than measured, and are there to make you feel you might miss out.",
+      "patterns": [
+        "\\b\\d+\\s+(people|shoppers|others|customers)\\s+(are\\s+)?(viewing|looking|watching|browsing)",
+        "\\b\\d+\\s+watching\\b",
+        "\\bin\\s+\\d+\\s+carts?\\b",
+        "\\b\\d+\\s+(people|others|customers)\\s+(bought|purchased|ordered)",
+        "\\b\\d+\\s+sold in the (last|past)\\b"
+      ]
+    },
+    {
+      "id": "social-proof-badges",
+      "category": "Interface Interference",
+      "approach": "Popularity Badges",
+      "mechanism": "Social proof manipulation",
+      "severity": "low",
+      "explanation": "A badge suggests this item is unusually popular. Shops choose these labels themselves, so they are not always based on real sales figures.",
+      "patterns": [
+        "\\bbest ?seller\\b",
+        "\\b#1 best\\b",
+        "\\bmost popular\\b",
+        "\\bcustomer favou?rite\\b",
+        "\\btrending now\\b",
+        "\\bhot item\\b"
+      ]
+    },
+    {
+      "id": "price-anchoring",
+      "category": "Interface Interference",
+      "approach": "Price Anchoring",
+      "mechanism": "Anchoring",
+      "severity": "low",
+      "explanation": "A higher 'original' price is shown next to the current one. If the item is rarely sold at that higher price, the saving looks bigger than it really is.",
+      "patterns": [
+        "\\b\\d{1,3}%\\s*off\\b",
+        "\\byou save\\b",
+        "\\bwas\\s*\\$\\s*\\d",
+        "\\brrp\\b",
+        "\\brecommended retail price\\b",
+        "\\bcompare at\\b"
+      ]
+    },
+    {
+      "id": "confirmshaming",
+      "category": "Interface Interference",
+      "approach": "Confirmshaming",
+      "mechanism": "Confirmshaming / guilt framing",
+      "severity": "high",
+      "explanation": "The option to say no is worded to make you feel foolish or cheap. The wording is there to push you toward the answer the site wants, not to describe your choice fairly.",
+      "patterns": [
+        "\\bno,? thanks,? i\\b",
+        "\\bi don'?t (want|like) (to )?(save|discounts?|deals?)",
+        "\\bi (prefer|like) (to )?pay(ing)? full price",
+        "\\bno,? i don'?t want\\b",
+        "\\bi'?m not interested in saving\\b",
+        "\\bi hate (savings|discounts|money)\\b"
+      ]
+    },
+    {
+      "id": "biased-cookie-choices",
+      "category": "Interface Interference",
+      "approach": "Biased Choice Presentation",
+      "mechanism": "Visual misdirection / false hierarchy",
+      "severity": "low",
+      "explanation": "A privacy or cookie choice is being offered. Agreeing is often made quick and obvious while refusing takes extra clicks. NightWatch can only see the wording so far — checking whether the buttons are actually balanced needs the structural checks coming in Layer 2.",
+      "patterns": [
+        "\\baccept all( cookies)?\\b",
+        "\\bmanage (cookie )?(preferences|settings)\\b",
+        "\\bwe value your privacy\\b",
+        "\\breject all\\b"
+      ]
+    },
+    {
+      "id": "trick-wording",
+      "category": "Interface Interference",
+      "approach": "Trick Questions",
+      "mechanism": "Cognitive overload",
+      "severity": "medium",
+      "explanation": "The wording uses double negatives, which makes it easy to agree to something by accident. It is worth reading these lines twice before ticking or unticking.",
+      "patterns": [
+        "\\bun(check|tick) this box if you do( not|n'?t) want",
+        "\\bdo not (uncheck|untick)\\b",
+        "\\bopt ?out (of|from) (receiving|future)",
+        "\\bif you do not wish to\\b"
+      ]
+    },
+    {
+      "id": "hidden-costs",
+      "category": "Sneaking",
+      "approach": "Hidden Costs",
+      "mechanism": "Cognitive overload / drip pricing",
+      "severity": "high",
+      "explanation": "Extra charges are added on top of the advertised price, often only at the last step of checkout. Check the final total before you pay.",
+      "source": "Consumer Policy Research Centre (2022): 88% of Australians surveyed reported encountering hidden costs.",
+      "patterns": [
+        "\\bplus (shipping|delivery|postage|fees|tax|gst)",
+        "\\b(additional|extra|service|handling|booking|processing) fees?\\b",
+        "\\bfees? (may )?appl(y|ies)\\b",
+        "\\bexcl(uding|\\.)? (tax|gst|delivery|shipping)",
+        "\\bcalculated at checkout\\b",
+        "\\b\\+ ?(delivery|shipping|postage)\\b"
+      ]
+    },
+    {
+      "id": "sneak-into-basket",
+      "category": "Sneaking",
+      "approach": "Sneak into Basket",
+      "mechanism": "Sneaking / pre-selection",
+      "severity": "high",
+      "explanation": "Something has been put in your cart that you did not choose yourself. Go through the order line by line before paying.",
+      "patterns": [
+        "\\bwe'?ve added\\b",
+        "\\bautomatically added to your (cart|basket|order|bag)",
+        "\\badded to your (cart|basket|bag) for you\\b",
+        "\\bincluded (in your order )?by default\\b",
+        "\\b(protection|insurance|warranty) added\\b"
+      ]
+    },
+    {
+      "id": "forced-continuity",
+      "category": "Sneaking",
+      "approach": "Forced Continuity",
+      "mechanism": "Sunk cost / commitment bias",
+      "severity": "high",
+      "explanation": "A trial or subscription will start charging you automatically unless you cancel first. Note the date it converts, and check how hard cancelling is before you sign up.",
+      "patterns": [
+        "\\bfree trial\\b",
+        "\\bauto[- ]?renew(s|al|ing)?\\b",
+        "\\brenews automatically\\b",
+        "\\byou will be (charged|billed) (after|when|unless)",
+        "\\bcancel any ?time\\b",
+        "\\bbilled (monthly|annually|yearly) (until|after)"
+      ]
+    },
+    {
+      "id": "cancellation-obstruction",
+      "category": "Obstruction",
+      "approach": "Roach Motel (Hard to Cancel)",
+      "mechanism": "Sunk cost / commitment bias",
+      "severity": "high",
+      "explanation": "Cancelling here needs a phone call, chat or email rather than a button. Signing up took one click; leaving has been made deliberately harder.",
+      "source": "Consumer Policy Research Centre (2022): 76% of Australians surveyed reported difficulty cancelling a subscription or account.",
+      "patterns": [
+        "\\b(call|phone|ring) (us|customer service|support) to cancel",
+        "\\bto cancel,? (please )?(call|contact|chat|email)",
+        "\\bcontact (us|support|customer service) to (cancel|close|delete)",
+        "\\bcancellation requests? must\\b",
+        "\\bspeak (to|with) an? (agent|representative|consultant) to cancel"
+      ]
+    },
+    {
+      "id": "account-deletion-obstruction",
+      "category": "Obstruction",
+      "approach": "Hard to Leave",
+      "mechanism": "Cognitive obstruction",
+      "severity": "medium",
+      "explanation": "Closing or deleting the account is not offered as a straightforward option here — you are routed through a support request instead.",
+      "patterns": [
+        "\\bto (delete|close) your account,? (please )?(call|contact|email|chat|submit)",
+        "\\baccount (deletion|closure) requests?\\b",
+        "\\b(deletion|closure) may take up to \\d+ (days|weeks)"
+      ]
+    },
+    {
+      "id": "forced-account-creation",
+      "category": "Forced Action",
+      "approach": "Forced Account Creation",
+      "mechanism": "Forced action",
+      "severity": "high",
+      "explanation": "You are being required to make an account before you can finish your order. Look for a 'guest checkout' option — many sites have one but keep it out of the way.",
+      "patterns": [
+        "\\b(create|make) an account to (continue|checkout|buy|order|proceed)",
+        "\\bsign ?up to (continue|checkout|proceed)",
+        "\\bregister to (checkout|continue|purchase|order)",
+        "\\byou must (create|have) an account",
+        "\\b(log ?in|sign ?in) (is )?required to (buy|purchase|checkout|continue)"
+      ]
+    },
+    {
+      "id": "forced-registration-to-view",
+      "category": "Forced Action",
+      "approach": "Forced Registration to View",
+      "mechanism": "Forced action",
+      "severity": "medium",
+      "explanation": "Information is being held back until you hand over an email address or make an account, even though showing it costs the site nothing.",
+      "patterns": [
+        "\\b(sign ?up|subscribe|register) to (see|unlock|view|reveal)",
+        "\\benter your email to (see|unlock|continue|view|get)",
+        "\\b(sign ?in|log ?in) to see (the )?price"
+      ]
+    },
+    {
+      "id": "forced-app-install",
+      "category": "Forced Action",
+      "approach": "App-Only Access",
+      "mechanism": "Forced action",
+      "severity": "medium",
+      "explanation": "You are being pushed into a phone app to do something the website could do perfectly well. Apps can usually collect more about your device than a web page can.",
+      "patterns": [
+        "\\b(open|continue|view|shop) (this )?in (the|our) app\\b",
+        "\\bapp[- ]only (price|deal|discount|offer)",
+        "\\bdownload (the|our) app to\\b",
+        "\\bavailable only (in|on) the app\\b"
+      ]
+    },
+    {
+      "id": "nagging-newsletter",
+      "category": "Nagging",
+      "approach": "Newsletter Nagging",
+      "mechanism": "Repeated interruption",
+      "severity": "medium",
+      "explanation": "The page is asking for your email address, usually in a pop-up that comes back on every visit. Repeated prompting wears people down until they agree.",
+      "patterns": [
+        "\\b(join|subscribe to) our (newsletter|mailing list)",
+        "\\bget \\d{1,2}% off your first (order|purchase)",
+        "\\bsign ?up for (exclusive )?(deals|offers|discounts)",
+        "\\bdon'?t miss out\\b",
+        "\\bbe the first to know\\b"
+      ]
+    },
+    {
+      "id": "nagging-notifications",
+      "category": "Nagging",
+      "approach": "Notification Nagging",
+      "mechanism": "Repeated interruption",
+      "severity": "medium",
+      "explanation": "The page wants permission to send you notifications, which lets it interrupt you again later even after you have left the site.",
+      "patterns": [
+        "\\b(allow|enable|turn on) (browser |web |push )?notifications\\b",
+        "\\bnever miss (a|an) (deal|offer|update|drop|sale)",
+        "\\bget notified (about|when|as soon as)\\b"
+      ]
+    }
+  ]
+}

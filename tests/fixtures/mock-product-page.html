@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Product Page — NightWatch test fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; max-width: 720px; }
+    .strike { text-decoration: line-through; color: #c0392b; }
+    .scarcity { color: #c0392b; font-weight: 600; }
+    .watching { background: #f5a623; padding: 2px 6px; }
+    .hidden-note { display: none; }
+    footer { margin-top: 32px; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <!--
+    Hand-built ground truth for testing Layer 1, modelled on the AliExpress
+    listing in docs/Wireframe for Captsone B.png. Every line below is here to
+    trigger a specific rule — see the expected list at the bottom of the file.
+  -->
+  <h1>SAMPLE Mouse Lightweight 1000Hz Polling Wireless 2.4Ghz/Bluetooth Professional</h1>
+
+  <p><span class="strike">$109</span> <strong>88% OFF!</strong> $20</p>
+  <p class="watching">👁 5 people are viewing this right now</p>
+  <p class="scarcity">Only 1 left in stock!</p>
+  <p>Flash sale — offer ends in 04:12:55. Hurry!</p>
+  <p>Best seller in Computer Accessories</p>
+
+  <h2>Cart</h2>
+  <p class="scarcity">ALMOST SOLD OUT — in 3 carts</p>
+  <p>$20 plus shipping. Additional fees apply at checkout.</p>
+  <p>We've added Shipping Protection to your order.</p>
+
+  <h2>Checkout</h2>
+  <p>You must create an account to continue.</p>
+  <p>Untick this box if you do not want to receive marketing emails.</p>
+
+  <h2>Newsletter</h2>
+  <p>Join our newsletter and get 15% off your first order. Don't miss out!</p>
+  <p>No thanks, I prefer to pay full price</p>
+
+  <h2>Membership</h2>
+  <p>Start your free trial — cancel anytime. Renews automatically at $9.99/month.</p>
+  <p>To cancel, please call customer service on business days.</p>
+
+  <!--
+    Hidden text, and the only place Notification Nagging appears. If the
+    visibility filter in the content script breaks, this pushes the detection
+    count from 13 to 14.
+  -->
+  <p class="hidden-note">Allow browser notifications so you never miss a deal</p>
+
+  <footer>
+    <p>
+      Expected detections: False Urgency (Low Stock), False Urgency (Countdown),
+      Manipulated Social Proof, Popularity Badges, Price Anchoring, Confirmshaming,
+      Trick Questions, Hidden Costs, Sneak into Basket, Forced Continuity,
+      Roach Motel (Hard to Cancel), Forced Account Creation, Newsletter Nagging.
+    </p>
+  </footer>
+</body>
+</html>

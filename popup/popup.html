@@ -1,14 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>NightWatch</title>
-  <style>
-    body { font-family: sans-serif; width: 250px; padding: 12px; }
-  </style>
+  <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <h3>NightWatch 🌙</h3>
-  <p>Hello NightWatch — extension is loaded and working.</p>
+  <header>
+    <h1>NightWatch <span aria-hidden="true">🌙</span></h1>
+  </header>
+
+  <p id="status" role="status">Checking this page…</p>
+  <div id="results"></div>
+  <p id="context"></p>
+
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

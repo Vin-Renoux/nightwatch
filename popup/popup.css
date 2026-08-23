@@ -1,0 +1,134 @@
+/* Plain CSS, no framework — the extension has to stay light (brief §11). */
+
+:root {
+  --night: #12182e;
+  --alert: #c0392b;
+  --ink: #1c2333;
+  --muted: #5a6478;
+  --hairline: #dfe3ec;
+  --surface: #ffffff;
+  --surface-alt: #f5f6fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 340px;
+  margin: 0;
+  padding: 0 0 12px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+header {
+  padding: 12px 14px;
+  background: var(--night);
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f0ecd6;
+}
+
+#status {
+  margin: 12px 14px;
+  color: var(--muted);
+}
+
+#status.alert {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+#results {
+  padding: 0 14px;
+}
+
+.category {
+  margin-bottom: 14px;
+}
+
+.category h2 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 4px;
+}
+
+.finding {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.category .finding:last-child {
+  border-bottom: none;
+}
+
+.finding h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.finding.high h3 {
+  color: var(--alert);
+}
+
+.mechanism {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.explanation {
+  margin: 0 0 6px;
+}
+
+.evidence {
+  margin: 0;
+  padding: 6px 8px;
+  background: var(--surface-alt);
+  border-left: 3px solid var(--hairline);
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.evidence li {
+  list-style: none;
+}
+
+.evidence li + li {
+  margin-top: 3px;
+}
+
+.source {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+#context {
+  margin: 0 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+#context:empty {
+  display: none;
+}
