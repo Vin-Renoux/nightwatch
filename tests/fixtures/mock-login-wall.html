@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Login Wall — NightWatch test fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    header { display: flex; justify-content: flex-end; padding: 12px 24px; background: #111; color: #fff; }
+    main { max-width: 360px; margin: 48px auto; text-align: center; }
+    input, button { width: 100%; padding: 10px; margin: 6px 0; }
+    footer { max-width: 360px; margin: 24px auto; font-size: 11px; color: #666; text-align: center; }
+  </style>
+</head>
+<body>
+  <!--
+    Reproduces docs/Screenshot_20260823_152845.png — clicking a product on
+    AliExpress Business redirects to a sign-in wall. The same "Sign in /
+    Register" wording also sits in the header of every ordinary page, which is
+    why the login-wall rule needs two distinct patterns before it reports.
+  -->
+  <header>
+    <span>Welcome</span>
+    <span>Sign in / Register</span>
+  </header>
+
+  <main>
+    <h1>Register/Sign in</h1>
+    <p>Your information is protected</p>
+    <input type="text" placeholder="Email or phone number" />
+    <button>Continue</button>
+    <p><a href="#">Trouble signing in?</a></p>
+    <p>Or continue with</p>
+    <button>Continue with Google</button>
+    <button>Continue with Facebook</button>
+  </main>
+
+  <footer>
+    <p>Expected detections: Login Wall (Forced Action).</p>
+  </footer>
+</body>
+</html>

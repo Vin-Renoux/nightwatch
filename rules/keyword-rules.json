@@ -1,40 +1,48 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "taxonomy": "Gray et al. (2024) five high-level strategies",
   "notes": [
     "Layer 1 (text) rules only. Each rule maps to exactly one of the five high-level strategies so the popup can group results consistently (brief 6.3).",
     "Scarcity, urgency, social proof and anchoring are mechanisms rather than strategies in the Gray et al. table, so they sit under Interface Interference (the interface presents misleading information to steer a decision). The 'mechanism' field carries the psychological 'why' from brief 2.",
-    "Patterns are case-insensitive regular expressions matched against individual visible text nodes. Keep them anchored with \\b so they do not fire inside unrelated words.",
+    "Naming: rules describe the tactic, not its truth. NightWatch cannot tell from the page whether a countdown or a stock count is genuine, so nothing is labelled 'false'. Verifying that (e.g. a timer that resets on reload) needs state across visits — a Layer 2 job.",
+    "notPatterns drop a match when the surrounding text negates it ('we won't ask for extra fees' is not a hidden cost).",
+    "minDistinctPatterns requires that many different patterns to match somewhere on the page before the rule reports. Use it where a single phrase is ambiguous — a header 'Sign in / Register' link is not a login wall.",
     "severity is a rough confidence/harm ranking used for popup ordering, not a research claim."
   ],
   "rules": [
     {
-      "id": "false-urgency-low-stock",
+      "id": "scarcity-low-stock",
       "category": "Interface Interference",
-      "approach": "False Urgency (Low Stock)",
+      "approach": "Scarcity Claim (Low Stock)",
       "mechanism": "Scarcity / loss aversion",
       "severity": "high",
-      "explanation": "This page says stock is nearly gone. Shops often show a low number whether or not it is true, to push you into buying before you have time to think it over.",
+      "explanation": "The page says stock is nearly gone. NightWatch cannot check whether the number is real, and many shops show a low count regardless — so treat it as pressure to hurry, not as fact.",
       "patterns": [
         "\\bonly\\s+\\d+\\s+(left|remaining|in stock|available)",
         "\\b\\d+\\s+left in stock\\b",
+        "\\bonly \\d+ left\\b",
         "\\balmost sold out\\b",
         "\\bselling (out )?fast\\b",
         "\\blow (in )?stock\\b",
         "\\blimited stock\\b",
-        "\\bwhile stocks last\\b"
-      ]
+        "\\bwhile stocks last\\b",
+        "\\bnearly gone\\b"
+      ],
+      "notPatterns": ["\\b(in|back in) stock now\\b", "\\bplenty (of|in) stock\\b"]
     },
     {
-      "id": "false-urgency-countdown",
+      "id": "urgency-deadline",
       "category": "Interface Interference",
-      "approach": "False Urgency (Countdown)",
+      "approach": "Urgency Pressure (Deadline)",
       "mechanism": "Scarcity / loss aversion",
       "severity": "high",
-      "explanation": "A countdown or deadline is being used to rush your decision. These timers often reset when the page is reloaded, so the deal may not really be ending.",
+      "explanation": "A deadline or countdown is being used to rush your decision. The deadline may well be real, but it is placed there to stop you comparing prices or thinking it over.",
       "patterns": [
-        "\\b(offer|deal|sale|price|discount)s? ends? in\\b",
+        "\\b(offer|deal|sale|price|discount|promotion)s? ends?\\b",
         "\\bends in \\d+",
+        "\\bends:\\s*\\w",
+        "\\bending (soon|in)\\b",
+        "\\bends? (today|tonight|tomorrow)\\b",
         "\\bexpires in \\d+",
         "\\bhurry\\b",
         "\\blast chance\\b",
@@ -44,18 +52,19 @@
       ]
     },
     {
-      "id": "social-proof-viewers",
+      "id": "social-proof-activity",
       "category": "Interface Interference",
-      "approach": "Manipulated Social Proof",
+      "approach": "Social Proof Pressure",
       "mechanism": "Social proof manipulation",
       "severity": "medium",
-      "explanation": "The page claims other shoppers are looking at or buying this item right now. These counts are often produced automatically rather than measured, and are there to make you feel you might miss out.",
+      "explanation": "The page shows how many other people are viewing or buying this item. These counts are often produced automatically rather than measured, and are there to make you feel you might miss out.",
       "patterns": [
         "\\b\\d+\\s+(people|shoppers|others|customers)\\s+(are\\s+)?(viewing|looking|watching|browsing)",
         "\\b\\d+\\s+watching\\b",
         "\\bin\\s+\\d+\\s+carts?\\b",
         "\\b\\d+\\s+(people|others|customers)\\s+(bought|purchased|ordered)",
-        "\\b\\d+\\s+sold in the (last|past)\\b"
+        "\\b[\\d,]+(\\.\\d+)?\\s*[km]?\\+?\\s+sold\\b",
+        "\\b[\\d,]+\\+?\\s+sold in the (last|past)\\b"
       ]
     },
     {
@@ -68,6 +77,7 @@
       "patterns": [
         "\\bbest ?seller\\b",
         "\\b#1 best\\b",
+        "\\btop \\d+ bestseller\\b",
         "\\bmost popular\\b",
         "\\bcustomer favou?rite\\b",
         "\\btrending now\\b",
@@ -84,7 +94,8 @@
       "patterns": [
         "\\b\\d{1,3}%\\s*off\\b",
         "\\byou save\\b",
-        "\\bwas\\s*\\$\\s*\\d",
+        "\\bsave\\s*(au|us|nz|c|£|€)?\\$\\s*\\d",
+        "\\bwas\\s*(au|us|nz|c|£|€)?\\$\\s*\\d",
         "\\brrp\\b",
         "\\brecommended retail price\\b",
         "\\bcompare at\\b"
@@ -112,12 +123,14 @@
       "approach": "Biased Choice Presentation",
       "mechanism": "Visual misdirection / false hierarchy",
       "severity": "low",
-      "explanation": "A privacy or cookie choice is being offered. Agreeing is often made quick and obvious while refusing takes extra clicks. NightWatch can only see the wording so far — checking whether the buttons are actually balanced needs the structural checks coming in Layer 2.",
+      "minDistinctPatterns": 2,
+      "explanation": "A privacy or cookie choice is being offered where agreeing is one click but refusing is not. NightWatch can only read the wording so far — checking whether the buttons are genuinely balanced needs the structural checks coming in Layer 2.",
       "patterns": [
         "\\baccept all( cookies)?\\b",
         "\\bmanage (cookie )?(preferences|settings)\\b",
         "\\bwe value your privacy\\b",
-        "\\breject all\\b"
+        "\\breject all\\b",
+        "\\bcookie (policy|settings|preferences)\\b"
       ]
     },
     {
@@ -131,7 +144,8 @@
         "\\bun(check|tick) this box if you do( not|n'?t) want",
         "\\bdo not (uncheck|untick)\\b",
         "\\bopt ?out (of|from) (receiving|future)",
-        "\\bif you do not wish to\\b"
+        "\\bif you do not wish to\\b",
+        "\\byou can opt out at any time\\b"
       ]
     },
     {
@@ -147,8 +161,16 @@
         "\\b(additional|extra|service|handling|booking|processing) fees?\\b",
         "\\bfees? (may )?appl(y|ies)\\b",
         "\\bexcl(uding|\\.)? (tax|gst|delivery|shipping)",
-        "\\bcalculated at checkout\\b",
+        "\\btax(es)? (excluded|not included)\\b",
+        "\\b(added|calculated|charged) at checkout\\b",
         "\\b\\+ ?(delivery|shipping|postage)\\b"
+      ],
+      "notPatterns": [
+        "\\b(won'?t|will not|never|does not|doesn'?t|do not|don'?t) (ask|charge|request|add)",
+        "\\bno (hidden|extra|additional|surprise) (fees?|costs?|charges?)",
+        "\\bwithout (extra|additional|hidden) (fees?|costs?|charges?)",
+        "\\bfree of (charge|extra charges?)",
+        "\\bscam\\b"
       ]
     },
     {
@@ -227,6 +249,24 @@
       ]
     },
     {
+      "id": "login-wall",
+      "category": "Forced Action",
+      "approach": "Login Wall",
+      "mechanism": "Forced action",
+      "severity": "high",
+      "minDistinctPatterns": 2,
+      "explanation": "This page is a sign-in wall standing between you and what you clicked on. Browsing and prices are usually available without an account elsewhere on the same site.",
+      "patterns": [
+        "\\bregister\\s*/\\s*sign ?in\\b",
+        "\\bsign ?in\\s*/\\s*register\\b",
+        "\\btrouble signing in\\b",
+        "\\bor continue with\\b",
+        "\\byour information is protected\\b",
+        "\\bcontinue with (google|facebook|apple)\\b",
+        "\\bemail or phone number\\b"
+      ]
+    },
+    {
       "id": "forced-registration-to-view",
       "category": "Forced Action",
       "approach": "Forced Registration to View",
@@ -250,7 +290,8 @@
         "\\b(open|continue|view|shop) (this )?in (the|our) app\\b",
         "\\bapp[- ]only (price|deal|discount|offer)",
         "\\bdownload (the|our) app to\\b",
-        "\\bavailable only (in|on) the app\\b"
+        "\\bavailable only (in|on) the app\\b",
+        "\\bget the .{0,20}app\\b"
       ]
     },
     {

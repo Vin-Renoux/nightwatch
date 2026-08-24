@@ -126,6 +126,14 @@ h1 {
   border-top: 1px solid var(--hairline);
   font-size: 11px;
   color: var(--muted);
+}
+
+#context span {
+  display: block;
+}
+
+.context-url {
+  font-weight: 600;
   word-break: break-all;
 }
 

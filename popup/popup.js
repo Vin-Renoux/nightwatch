@@ -6,6 +6,12 @@
  */
 
 import { groupByCategory } from "../lib/classifier.js";
+import { friendlyUrl, skipReason } from "../lib/scope.js";
+
+const SKIP_MESSAGES = {
+  search: "NightWatch skips search results, because the snippets quote text from other sites.",
+  unsupported: "NightWatch only works on normal web pages.",
+};
 
 const statusEl = document.querySelector("#status");
 const resultsEl = document.querySelector("#results");
@@ -15,26 +21,33 @@ init();
 
 async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const origin = originOf(tab?.url);
+  const url = tab?.url;
 
-  if (!origin) {
-    setStatus("NightWatch only works on normal web pages.");
+  const skipped = skipReason(url ?? "");
+  if (skipped) {
+    setStatus(SKIP_MESSAGES[skipped]);
     return;
   }
 
-  const response = await chrome.runtime.sendMessage({ type: "NW_GET_RESULTS", origin });
+  const response = await chrome.runtime.sendMessage({ type: "NW_GET_RESULTS", url });
 
   if (!response?.ok) {
     setStatus("Could not read results. Try reloading the page.");
     return;
   }
 
-  render(response.record);
+  render(response.record, url);
 }
 
-function render(record) {
+function render(record, url) {
   if (!record) {
-    setStatus("Nothing scanned here yet — reload the page, then reopen NightWatch.");
+    // Content scripts do not run on local files unless the user turns on
+    // "Allow access to file URLs", which is easy to miss when testing fixtures.
+    setStatus(
+      url.startsWith("file:")
+        ? "Nothing scanned here yet. For local files, turn on “Allow access to file URLs” on the NightWatch card in chrome://extensions, then reload the page."
+        : "Nothing scanned here yet — reload the page, then reopen NightWatch.",
+    );
     return;
   }
 
@@ -85,7 +98,10 @@ function renderFinding(finding) {
 
 function renderContext(record) {
   const when = new Date(record.scannedAt).toLocaleTimeString();
-  contextEl.textContent = `Scanned ${record.url} at ${when}. Text checks only — structural checks are still to come.`;
+  contextEl.append(element("span", friendlyUrl(record.url), "context-url"));
+  contextEl.append(
+    element("span", `Scanned ${when}. Text checks only — structural checks are still to come.`),
+  );
 }
 
 function setStatus(text, isAlert = false) {
@@ -98,13 +114,4 @@ function element(tag, text, className) {
   node.textContent = text;
   if (className) node.className = className;
   return node;
-}
-
-function originOf(url) {
-  try {
-    const { origin, protocol } = new URL(url);
-    return protocol === "http:" || protocol === "https:" ? origin : null;
-  } catch {
-    return null;
-  }
 }

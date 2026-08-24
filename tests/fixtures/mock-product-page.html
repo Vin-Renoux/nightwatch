@@ -15,20 +15,24 @@
 <body>
   <!--
     Hand-built ground truth for testing Layer 1, modelled on the AliExpress
-    listing in docs/Wireframe for Captsone B.png. Every line below is here to
-    trigger a specific rule — see the expected list at the bottom of the file.
+    listing in docs/Wireframe for Captsone B.png plus the real pages captured in
+    docs/Screenshot_20260823_*.png. Every line below is here to trigger (or
+    deliberately not trigger) a specific rule.
   -->
   <h1>SAMPLE Mouse Lightweight 1000Hz Polling Wireless 2.4Ghz/Bluetooth Professional</h1>
 
-  <p><span class="strike">$109</span> <strong>88% OFF!</strong> $20</p>
+  <p><span class="strike">$109</span> <strong>88% OFF!</strong> $20 <span>Save AU$89.00</span></p>
   <p class="watching">👁 5 people are viewing this right now</p>
+  <p>10,000+ sold</p>
   <p class="scarcity">Only 1 left in stock!</p>
+  <p>WINTER SALE · Welcome deal — Sale Ends: Aug 27, 16:59 AEST</p>
   <p>Flash sale — offer ends in 04:12:55. Hurry!</p>
   <p>Best seller in Computer Accessories</p>
 
   <h2>Cart</h2>
   <p class="scarcity">ALMOST SOLD OUT — in 3 carts</p>
   <p>$20 plus shipping. Additional fees apply at checkout.</p>
+  <p>Tax excluded, add at checkout if applicable</p>
   <p>We've added Shipping Protection to your order.</p>
 
   <h2>Checkout</h2>
@@ -44,18 +48,28 @@
   <p>To cancel, please call customer service on business days.</p>
 
   <!--
+    Negation control, from docs/Screenshot_20260823_153446.png: Temu's own
+    anti-scam notice was being flagged as a hidden cost. The notPatterns on
+    hidden-costs must suppress this line.
+  -->
+  <p>Security reminder: we won't ask for extra fees via SMS or email.</p>
+
+  <!--
     Hidden text, and the only place Notification Nagging appears. If the
-    visibility filter in the content script breaks, this pushes the detection
-    count from 13 to 14.
+    visibility filter in the content script breaks, this adds a 15th detection.
   -->
   <p class="hidden-note">Allow browser notifications so you never miss a deal</p>
 
   <footer>
     <p>
-      Expected detections: False Urgency (Low Stock), False Urgency (Countdown),
-      Manipulated Social Proof, Popularity Badges, Price Anchoring, Confirmshaming,
+      Expected detections (13): Scarcity Claim (Low Stock), Urgency Pressure (Deadline),
+      Social Proof Pressure, Popularity Badges, Price Anchoring, Confirmshaming,
       Trick Questions, Hidden Costs, Sneak into Basket, Forced Continuity,
       Roach Motel (Hard to Cancel), Forced Account Creation, Newsletter Nagging.
+    </p>
+    <p>
+      Expected NOT detected: Notification Nagging (hidden), Login Wall (needs two
+      distinct patterns), and the anti-scam line above (negated).
     </p>
   </footer>
 </body>

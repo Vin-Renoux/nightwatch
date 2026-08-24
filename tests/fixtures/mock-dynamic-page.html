@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Dynamic Page — NightWatch test fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    .scarcity { color: #c0392b; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <!--
+    Regression fixture for the rescan-starvation bug.
+
+    A live countdown mutates the DOM several times a second. With a plain
+    debounced MutationObserver the timer is reset before it can ever fire, so
+    the page is scanned once at load and never again — which is why real
+    AliExpress and Temu pages showed far fewer detections than they should
+    (docs/Screenshot_20260823_152604.png). The content script now forces a scan
+    through every RESCAN_MAX_WAIT_MS regardless of ongoing mutations.
+
+    Expected: 1 detection at load (Urgency Pressure), 2 after the late content
+    arrives (plus Scarcity Claim).
+  -->
+  <h1>SAMPLE Wireless Mouse</h1>
+  <p>Deal ends in <span id="timer">00:04:59</span></p>
+  <div id="late"></div>
+
+  <script>
+    // Constant mutations, like a real countdown.
+    let remaining = 299;
+    setInterval(() => {
+      remaining -= 1;
+      const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
+      const seconds = String(remaining % 60).padStart(2, "0");
+      document.getElementById("timer").textContent = `00:${minutes}:${seconds}`;
+    }, 250);
+
+    // Content that appears after the initial scan, like a stock badge that
+    // loads late or a modal that opens on interaction.
+    setTimeout(() => {
+      const late = document.createElement("p");
+      late.className = "scarcity";
+      late.textContent = "Only 2 left in stock!";
+      document.getElementById("late").append(late);
+    }, 2500);
+  </script>
+</body>
+</html>

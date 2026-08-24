@@ -2,17 +2,18 @@
  * NightWatch service worker — classification and state.
  *
  * Content scripts send page text here; this runs the Layer 1 rules over it,
- * persists the result per site in chrome.storage.local, and answers the popup.
- * Nothing leaves the browser (brief §11).
+ * accumulates the result for that page in chrome.storage.local, and answers
+ * the popup. Nothing leaves the browser (brief §11).
  */
 
-import { classifySegments, compileRules } from "../lib/classifier.js";
+import { classifySegments, compileRules, mergeFindings } from "../lib/classifier.js";
+import { isScannable, pageKeyFor } from "../lib/scope.js";
 
 console.log("[NightWatch] service worker started");
 
 const RULES_PATH = "rules/keyword-rules.json";
-const SITE_KEY_PREFIX = "site:";
-const MAX_STORED_SITES = 50;
+const PAGE_KEY_PREFIX = "page:";
+const MAX_STORED_PAGES = 100;
 
 let rulesPromise = null;
 
@@ -34,7 +35,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message?.type === "NW_GET_RESULTS") {
-    readSiteRecord(message.origin)
+    readPageRecord(message.url)
       .then((record) => sendResponse({ ok: true, record }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
@@ -61,59 +62,63 @@ function loadRules() {
 }
 
 async function handlePageSignals(message, sender) {
-  const origin = originOf(message.url);
-  if (!origin) return { ok: true, skipped: "unsupported-scheme" };
+  if (!isScannable(message.url)) return { ok: true, skipped: true };
+
+  const key = storageKeyFor(message.url);
+  if (!key) return { ok: true, skipped: true };
 
   const rules = await loadRules();
   const findings = classifySegments(message.segments, rules);
 
-  await writeSiteRecord({
-    origin,
+  // Merge rather than replace: a rescan can catch the page mid-rebuild with
+  // less text than before, and replacing would wipe real detections.
+  const previous = await readRecord(key);
+  const merged = mergeFindings(previous?.findings, findings);
+
+  await writeRecord(key, {
     url: message.url,
     title: message.title ?? "",
     scannedAt: Date.now(),
-    findings,
+    findings: merged,
   });
 
   const tabId = sender.tab?.id;
-  if (typeof tabId === "number") await updateBadge(tabId, findings.length);
+  if (typeof tabId === "number") await updateBadge(tabId, merged.length);
 
   console.log(
-    `[NightWatch] ${findings.length} pattern(s) on ${message.url} (${message.reason})`,
+    `[NightWatch] ${findings.length} this pass, ${merged.length} total on ${message.url} (${message.reason})`,
   );
-  return { ok: true, count: findings.length };
+  return { ok: true, count: merged.length };
 }
 
-/** Only normal web pages are scannable — chrome:// and extension pages are not. */
-function originOf(url) {
-  try {
-    const { origin, protocol } = new URL(url);
-    return protocol === "http:" || protocol === "https:" ? origin : null;
-  } catch {
-    return null;
-  }
+function storageKeyFor(url) {
+  const pageKey = pageKeyFor(url);
+  return pageKey ? PAGE_KEY_PREFIX + pageKey : null;
 }
 
-async function readSiteRecord(origin) {
-  if (!origin) return null;
-  const key = SITE_KEY_PREFIX + origin;
+async function readPageRecord(url) {
+  const key = storageKeyFor(url);
+  return key ? readRecord(key) : null;
+}
+
+async function readRecord(key) {
   const stored = await chrome.storage.local.get(key);
   return stored[key] ?? null;
 }
 
-async function writeSiteRecord(record) {
-  await chrome.storage.local.set({ [SITE_KEY_PREFIX + record.origin]: record });
-  await pruneStoredSites();
+async function writeRecord(key, record) {
+  await chrome.storage.local.set({ [key]: record });
+  await pruneStoredPages();
 }
 
-/** Keep local storage bounded — drop the least recently scanned sites. */
-async function pruneStoredSites() {
+/** Keep local storage bounded — drop the least recently scanned pages. */
+async function pruneStoredPages() {
   const everything = await chrome.storage.local.get(null);
-  const keys = Object.keys(everything).filter((key) => key.startsWith(SITE_KEY_PREFIX));
-  if (keys.length <= MAX_STORED_SITES) return;
+  const keys = Object.keys(everything).filter((key) => key.startsWith(PAGE_KEY_PREFIX));
+  if (keys.length <= MAX_STORED_PAGES) return;
 
   keys.sort((a, b) => (everything[a]?.scannedAt ?? 0) - (everything[b]?.scannedAt ?? 0));
-  await chrome.storage.local.remove(keys.slice(0, keys.length - MAX_STORED_SITES));
+  await chrome.storage.local.remove(keys.slice(0, keys.length - MAX_STORED_PAGES));
 }
 
 async function updateBadge(tabId, count) {
