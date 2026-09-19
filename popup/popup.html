@@ -6,13 +6,15 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header>
-    <h1>NightWatch <span aria-hidden="true">🌙</span></h1>
+  <header class="topbar">
+    <span class="mark" aria-hidden="true">🌙</span>
+    <h1>NightWatch</h1>
+    <span id="tally" class="tally" hidden></span>
   </header>
 
-  <p id="status" role="status">Checking this page…</p>
-  <div id="results"></div>
-  <p id="context"></p>
+  <p id="status" class="status" role="status">Checking this page…</p>
+  <div id="results" class="results"></div>
+  <footer id="context" class="context"></footer>
 
   <script type="module" src="popup.js"></script>
 </body>

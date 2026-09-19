@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "taxonomy": "Gray et al. (2024) five high-level strategies",
   "notes": [
     "Layer 1 (text) rules only. Each rule maps to exactly one of the five high-level strategies so the popup can group results consistently (brief 6.3).",
@@ -7,6 +7,7 @@
     "Naming: rules describe the tactic, not its truth. NightWatch cannot tell from the page whether a countdown or a stock count is genuine, so nothing is labelled 'false'. Verifying that (e.g. a timer that resets on reload) needs state across visits — a Layer 2 job.",
     "notPatterns drop a match when the surrounding text negates it ('we won't ask for extra fees' is not a hidden cost).",
     "minDistinctPatterns requires that many different patterns to match somewhere on the page before the rule reports. Use it where a single phrase is ambiguous — a header 'Sign in / Register' link is not a login wall.",
+    "requiresCommerce keeps a rule quiet unless the page looks like a shop. Use it where the wording is ordinary marketing language off a storefront — 'Browse most popular courses' on LinkedIn Learning is a section heading, not a popularity badge.",
     "severity is a rough confidence/harm ranking used for popup ordering, not a research claim."
   ],
   "rules": [
@@ -73,6 +74,7 @@
       "approach": "Popularity Badges",
       "mechanism": "Social proof manipulation",
       "severity": "low",
+      "requiresCommerce": true,
       "explanation": "A badge suggests this item is unusually popular. Shops choose these labels themselves, so they are not always based on real sales figures.",
       "patterns": [
         "\\bbest ?seller\\b",
@@ -90,6 +92,7 @@
       "approach": "Price Anchoring",
       "mechanism": "Anchoring",
       "severity": "low",
+      "requiresCommerce": true,
       "explanation": "A higher 'original' price is shown next to the current one. If the item is rarely sold at that higher price, the saving looks bigger than it really is.",
       "patterns": [
         "\\b\\d{1,3}%\\s*off\\b",
@@ -303,9 +306,12 @@
       "explanation": "The page is asking for your email address, usually in a pop-up that comes back on every visit. Repeated prompting wears people down until they agree.",
       "patterns": [
         "\\b(join|subscribe to) our (newsletter|mailing list)",
+        "\\bsubscribe to (our )?(newsletter|emails?|updates)\\b",
+        "\\bjoin (our )?mailing list\\b",
+        "\\benter your email\\b",
+        "\\bemail me (deals|offers|updates)\\b",
         "\\bget \\d{1,2}% off your first (order|purchase)",
         "\\bsign ?up for (exclusive )?(deals|offers|discounts)",
-        "\\bdon'?t miss out\\b",
         "\\bbe the first to know\\b"
       ]
     },

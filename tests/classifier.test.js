@@ -11,8 +11,10 @@ import { join } from "node:path";
 import {
   CATEGORY_ORDER,
   classifySegments,
+  commerceScore,
   compileRules,
   groupByCategory,
+  looksLikeShop,
   mergeFindings,
 } from "../lib/classifier.js";
 
@@ -83,7 +85,9 @@ test("detects a deadline written as a date rather than a countdown", () => {
 });
 
 test("detects a saving stated as an amount rather than a percentage", () => {
-  assert.ok(idsFor(["Save AU$54.44"]).includes("price-anchoring"));
+  // price-anchoring is commerce-gated, so give it a storefront to sit on.
+  const listing = ["Save AU$54.44", "Add to cart", "Ships from CN"];
+  assert.ok(idsFor(listing).includes("price-anchoring"));
 });
 
 test("detects tax excluded from the displayed price", () => {
@@ -165,7 +169,10 @@ test("findings are plain JSON, with no internal bookkeeping left on them", () =>
 });
 
 test("orders findings worst-first", () => {
-  const findings = classifySegments(["Best seller", "Only 5 left in stock"], rules);
+  const findings = classifySegments(
+    ["Best seller", "Only 5 left in stock", "Add to cart", "$19.99"],
+    rules,
+  );
   assert.equal(findings[0].severity, "high");
   assert.equal(findings.at(-1).severity, "low");
 });
@@ -215,4 +222,74 @@ test("merging tolerates a missing previous record", () => {
   const scan = classifySegments(["Only 1 left in stock"], rules);
   assert.deepEqual(mergeFindings(undefined, scan), scan);
   assert.deepEqual(mergeFindings(scan, undefined), scan);
+});
+
+// Regression test for docs/Screenshot_20260823_174332.png — eBay's "Plus
+// Weekend" banner was reported as a newsletter prompt because it ends with
+// "Don't miss out". Nothing on that banner asks for an email address.
+test("marketing urgency alone is not newsletter nagging", () => {
+  const banner = [
+    "Plus Weekend is almost here!",
+    "Get exclusive savings & daily deal drops.* Don't miss out.",
+    "See what's coming",
+  ];
+  assert.ok(!idsFor(banner).includes("nagging-newsletter"));
+});
+
+test("an actual email prompt is still newsletter nagging", () => {
+  for (const text of [
+    "Join our newsletter",
+    "Enter your email for 10% off",
+    "Subscribe to our emails",
+  ]) {
+    assert.ok(idsFor([text]).includes("nagging-newsletter"), `missed "${text}"`);
+  }
+});
+
+// Regression test for docs/Screenshot_20260823_174516.png — LinkedIn Learning's
+// "Browse most popular courses" heading was reported as a popularity badge.
+test("a course catalogue is not a shop", () => {
+  const catalogue = [
+    "Browse most popular courses",
+    "Beginning your data science exploration",
+    "From: Introduction to Data Science (2023)",
+    "Buy for my team",
+    "Best Match",
+  ];
+  assert.ok(!looksLikeShop(catalogue));
+  assert.ok(!idsFor(catalogue).includes("social-proof-badges"));
+});
+
+test("the same wording on a shop is a popularity badge", () => {
+  const shop = ["Most popular", "Add to cart", "$24.99", "Free shipping on orders over $49"];
+  assert.ok(looksLikeShop(shop));
+  assert.ok(idsFor(shop).includes("social-proof-badges"));
+});
+
+test("a discount on a page with nothing to buy is not price anchoring", () => {
+  assert.ok(!idsFor(["Save 20% off your first month of coaching"]).includes("price-anchoring"));
+  assert.ok(
+    idsFor(["20% off", "Add to cart", "$19.99"]).includes("price-anchoring"),
+  );
+});
+
+test("ungated rules still fire away from shops", () => {
+  // Forced continuity and roach motels turn up on subscription services that
+  // show no prices at all, so they must not be gated behind commerce signals.
+  assert.ok(idsFor(["Your free trial renews automatically"]).includes("forced-continuity"));
+  assert.ok(
+    idsFor(["To cancel, please call customer service"]).includes("cancellation-obstruction"),
+  );
+});
+
+test("commerce signals have to be different from each other", () => {
+  // Three prices are one signal, not three.
+  assert.equal(commerceScore(["$10", "$20", "$30"]), 1);
+  assert.ok(!looksLikeShop(["$10", "$20", "$30"]));
+  assert.ok(looksLikeShop(["$10", "Add to cart"]));
+});
+
+test("commerce scoring tolerates malformed input", () => {
+  assert.equal(commerceScore(undefined), 0);
+  assert.equal(commerceScore([null, 42]), 0);
 });

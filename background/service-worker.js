@@ -7,15 +7,18 @@
  */
 
 import { classifySegments, compileRules, mergeFindings } from "../lib/classifier.js";
-import { isScannable, pageKeyFor } from "../lib/scope.js";
+import { PAGE_KEY_PREFIX, isScannable, storageKeyFor } from "../lib/scope.js";
+import { createSerialQueue } from "../lib/serial-queue.js";
 
 console.log("[NightWatch] service worker started");
 
 const RULES_PATH = "rules/keyword-rules.json";
-const PAGE_KEY_PREFIX = "page:";
 const MAX_STORED_PAGES = 100;
 
 let rulesPromise = null;
+
+// One page at a time: see lib/serial-queue.js for what went wrong without it.
+const pageQueue = createSerialQueue();
 
 chrome.action.setBadgeBackgroundColor({ color: "#c0392b" });
 
@@ -69,31 +72,31 @@ async function handlePageSignals(message, sender) {
 
   const rules = await loadRules();
   const findings = classifySegments(message.segments, rules);
-
-  // Merge rather than replace: a rescan can catch the page mid-rebuild with
-  // less text than before, and replacing would wipe real detections.
-  const previous = await readRecord(key);
-  const merged = mergeFindings(previous?.findings, findings);
-
-  await writeRecord(key, {
-    url: message.url,
-    title: message.title ?? "",
-    scannedAt: Date.now(),
-    findings: merged,
-  });
-
   const tabId = sender.tab?.id;
-  if (typeof tabId === "number") await updateBadge(tabId, merged.length);
+
+  // Read, merge, write and badge as one unit. Interleaving these with another
+  // scan of the same page is what left the badge and the popup disagreeing.
+  const merged = await pageQueue(key, async () => {
+    // Merge rather than replace: a rescan can catch the page mid-rebuild with
+    // less text than before, and replacing would wipe real detections.
+    const previous = await readRecord(key);
+    const accumulated = mergeFindings(previous?.findings, findings);
+
+    await writeRecord(key, {
+      url: message.url,
+      title: message.title ?? "",
+      scannedAt: Date.now(),
+      findings: accumulated,
+    });
+
+    if (typeof tabId === "number") await updateBadge(tabId, accumulated.length);
+    return accumulated;
+  });
 
   console.log(
     `[NightWatch] ${findings.length} this pass, ${merged.length} total on ${message.url} (${message.reason})`,
   );
   return { ok: true, count: merged.length };
-}
-
-function storageKeyFor(url) {
-  const pageKey = pageKeyFor(url);
-  return pageKey ? PAGE_KEY_PREFIX + pageKey : null;
 }
 
 async function readPageRecord(url) {

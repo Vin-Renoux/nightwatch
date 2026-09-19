@@ -7,7 +7,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { friendlyUrl, isScannable, isSearchPage, pageKeyFor, skipReason } from "../lib/scope.js";
+import {
+  PAGE_KEY_PREFIX,
+  friendlyUrl,
+  isScannable,
+  isSearchPage,
+  pageKeyFor,
+  skipReason,
+  storageKeyFor,
+} from "../lib/scope.js";
 
 test("skips search engines", () => {
   const searchPages = [
@@ -62,6 +70,16 @@ test("page keys ignore the fragment but keep the query", () => {
     pageKeyFor("https://shop.example.com/item?id=7"),
     pageKeyFor("https://shop.example.com/item?id=7#specs"),
   );
+});
+
+// The service worker writes these keys and the popup watches them for live
+// updates, so both sides have to derive the same string.
+test("storage keys are the page key behind a prefix", () => {
+  assert.equal(
+    storageKeyFor("https://shop.example.com/item?id=7#reviews"),
+    `${PAGE_KEY_PREFIX}https://shop.example.com/item?id=7`,
+  );
+  assert.equal(storageKeyFor("not a url"), null);
 });
 
 test("different product pages get different keys", () => {

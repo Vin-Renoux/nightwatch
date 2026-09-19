@@ -6,40 +6,61 @@
  */
 
 import { groupByCategory } from "../lib/classifier.js";
-import { friendlyUrl, skipReason } from "../lib/scope.js";
+import { friendlyUrl, skipReason, storageKeyFor } from "../lib/scope.js";
 
 const SKIP_MESSAGES = {
   search: "NightWatch skips search results, because the snippets quote text from other sites.",
   unsupported: "NightWatch only works on normal web pages.",
 };
 
+const SEVERITY_LABELS = {
+  high: "Higher concern",
+  medium: "Moderate concern",
+  low: "Lower concern",
+};
+
 const statusEl = document.querySelector("#status");
 const resultsEl = document.querySelector("#results");
 const contextEl = document.querySelector("#context");
+const tallyEl = document.querySelector("#tally");
+
+let storageKey = null;
 
 init();
 
 async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const url = tab?.url;
+  const url = tab?.url ?? "";
 
-  const skipped = skipReason(url ?? "");
+  const skipped = skipReason(url);
   if (skipped) {
     setStatus(SKIP_MESSAGES[skipped]);
     return;
   }
 
-  const response = await chrome.runtime.sendMessage({ type: "NW_GET_RESULTS", url });
+  storageKey = storageKeyFor(url);
 
+  const response = await chrome.runtime.sendMessage({ type: "NW_GET_RESULTS", url });
   if (!response?.ok) {
     setStatus("Could not read results. Try reloading the page.");
     return;
   }
 
   render(response.record, url);
+
+  // A rescan can land while the popup is sitting open — follow it rather than
+  // leaving a stale count on screen while the toolbar badge moves on without us.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !storageKey) return;
+    const change = changes[storageKey];
+    if (change?.newValue) render(change.newValue, url);
+  });
 }
 
 function render(record, url) {
+  resultsEl.replaceChildren();
+  contextEl.replaceChildren();
+
   if (!record) {
     // Content scripts do not run on local files unless the user turns on
     // "Allow access to file URLs", which is easy to miss when testing fixtures.
@@ -51,14 +72,16 @@ function render(record, url) {
     return;
   }
 
-  if (record.findings.length === 0) {
+  const count = record.findings.length;
+  setTally(count);
+
+  if (count === 0) {
     setStatus("No dark patterns found in this page's text.");
     renderContext(record);
     return;
   }
 
-  const count = record.findings.length;
-  setStatus(`Warning! ${count} dark pattern${count === 1 ? "" : "s"} detected.`, true);
+  setStatus(`Warning — ${count} dark pattern${count === 1 ? "" : "s"} found on this page.`, true);
 
   for (const group of groupByCategory(record.findings)) {
     resultsEl.append(renderCategory(group));
@@ -76,10 +99,23 @@ function renderCategory({ category, findings }) {
 
 function renderFinding(finding) {
   const article = document.createElement("article");
-  article.className = `finding ${finding.severity}`;
+  article.className = "finding";
 
-  article.append(element("h3", finding.approach));
-  article.append(element("p", `Uses: ${finding.mechanism}`, "mechanism"));
+  const head = document.createElement("div");
+  head.className = "finding-head";
+
+  const dot = document.createElement("span");
+  dot.className = `dot ${finding.severity}`;
+  dot.setAttribute("role", "img");
+  dot.setAttribute("aria-label", SEVERITY_LABELS[finding.severity] ?? "");
+  head.append(dot, element("h3", finding.approach));
+
+  if (finding.matchCount > 1) {
+    head.append(element("span", `${finding.matchCount}×`, "seen"));
+  }
+
+  article.append(head);
+  article.append(element("p", `Plays on: ${finding.mechanism}`, "mechanism"));
   article.append(element("p", finding.explanation, "explanation"));
 
   if (finding.evidence.length > 0) {
@@ -100,13 +136,18 @@ function renderContext(record) {
   const when = new Date(record.scannedAt).toLocaleTimeString();
   contextEl.append(element("span", friendlyUrl(record.url), "context-url"));
   contextEl.append(
-    element("span", `Scanned ${when}. Text checks only — structural checks are still to come.`),
+    element("span", `Scanned ${when} · text checks only, structural checks still to come`),
   );
 }
 
 function setStatus(text, isAlert = false) {
   statusEl.textContent = text;
   statusEl.classList.toggle("alert", isAlert);
+}
+
+function setTally(count) {
+  tallyEl.textContent = String(count);
+  tallyEl.hidden = count === 0;
 }
 
 function element(tag, text, className) {
