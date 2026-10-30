@@ -129,6 +129,26 @@ const SCENARIOS = [
     exactly: ["biased-buttons"],
   },
   {
+    name: "Layer 1 — Temu badges, including a picture badge",
+    page: "mock-temu-listing.html",
+    settle: 3500,
+    exactly: ["social-proof-activity", "social-proof-badges"],
+    check: (record) => {
+      const badges = record?.findings?.find((finding) => finding.id === "social-proof-badges");
+      if (!badges) return "social-proof-badges missing";
+      // Read from <img alt>, so this proves picture badges are seen.
+      if (badges.matchCount < 5) return `only ${badges.matchCount} of 5 badges seen`;
+      return null;
+    },
+  },
+  {
+    name: "Layer 2 — a tucked-away cancel link",
+    page: "mock-account-page.html",
+    settle: 3500,
+    exactly: ["hidden-cancel-link"],
+    check: (record) => expectCount(record, "hidden-cancel-link", 1),
+  },
+  {
     name: "Layer 2 — app shell with a pop-up inside it",
     page: "mock-app-shell.html",
     settle: 6000,

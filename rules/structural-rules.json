@@ -5,6 +5,7 @@
     "Like Layer 1, every rule maps to one of the five Gray et al. (2024) strategies so the popup can group results consistently.",
     "A pop-up only counts as an interruption if it opened without a click or key press just before it. Something the shopper opened themselves is not nagging.",
     "Cookie and consent banners are never reported as interruptions — they are legally required — but their buttons are still measured for bias. Once a consent choice has been measured, the Layer 1 rules listed in 'settles' are dropped for that page: the measurement replaces the wording-based guess, whichever way it comes out.",
+    "A cancel or unsubscribe link counts as hidden when its text is under hiddenLinkFontPx pixels or below hiddenLinkContrast against its background — the same 3:1 line WCAG draws for large text, so normal grey footer links (about 4.5:1) are not flagged.",
     "Button prominence uses WCAG 2 contrast ratios, so faintContrast 3.0 is the same line accessibility guidance draws for large text.",
     "Vocabulary entries are case-insensitive regular expressions, matched against button labels, checkbox labels or pop-up text after curly apostrophes are straightened."
   ],
@@ -21,7 +22,9 @@
     "sizeRatio": 0.5,
     "fontRatio": 0.8,
     "faintContrast": 3.0,
-    "biasThreshold": 1.5
+    "biasThreshold": 1.5,
+    "hiddenLinkContrast": 3.0,
+    "hiddenLinkFontPx": 10.5
   },
   "vocabulary": {
     "decline": [
@@ -48,6 +51,13 @@
       "\\b(only|just) (the )?(necessary|essential|required)\\b",
       "\\b(necessary|essential|required) (cookies )?only\\b",
       "\\bunsubscribe\\b"
+    ],
+    "cancelLink": [
+      "\\bunsubscribe\\b",
+      "\\bcancel (my |your |the )?(subscription|membership|plan|account|trial|auto[- ]?renewal)\\b",
+      "\\b(close|delete|deactivate) (my |your )?account\\b",
+      "\\b(end|stop) (my |your )?(subscription|membership)\\b",
+      "\\bturn off auto[- ]?renew(al)?\\b"
     ],
     "consentAlternative": [
       "\\b(manage|customi[sz]e|adjust|change|review|set)\\b.{0,20}\\b(settings|preferences|options|choices|cookies|consent)\\b",
@@ -161,6 +171,14 @@
       "mechanism": "Sneaking / pre-selection",
       "severity": "high",
       "explanation": "An optional extra was already ticked for you. If you leave it, it will probably be added to your order and your total — untick it if you don't want it."
+    },
+    {
+      "id": "hidden-cancel-link",
+      "category": "Obstruction",
+      "approach": "Hidden Cancel Link",
+      "mechanism": "Cognitive obstruction",
+      "severity": "high",
+      "explanation": "The way out — cancelling or unsubscribing — is on the page, but styled so it is easy to miss: tiny, faint, or both. Joining was made easy; leaving is made easy to overlook."
     },
     {
       "id": "preticked-consent",

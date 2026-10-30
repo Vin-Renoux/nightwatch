@@ -44,9 +44,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message?.type === "NW_GET_STRUCTURE_CONFIG") {
     // Content scripts cannot fetch extension files without exposing them to
-    // every website, so they ask for the "no" wording they need instead.
+    // every website, so they ask for the wording they need instead.
     structureRules()
-      .then((rules) => sendResponse({ ok: true, declinePatterns: rules.declineSources }))
+      .then((rules) =>
+        sendResponse({
+          ok: true,
+          declinePatterns: rules.declineSources,
+          cancelPatterns: rules.cancelSources,
+        }),
+      )
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }

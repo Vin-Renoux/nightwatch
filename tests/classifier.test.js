@@ -338,3 +338,28 @@ test("folding keeps everything that was not settled", () => {
   const folded = foldScan({ findings: [], superseded: [] }, scan, ["biased-cookie-choices"]);
   assert.equal(folded.findings.length, 2);
 });
+
+// Regression tests for docs/Screenshot_20261031_093607.png and
+// docs/Screenshot_20261031_093614.png (Temu).
+test("an app feature called 'low stock alerts' is not a scarcity claim", () => {
+  assert.ok(!idsFor(["Low stock items alerts"]).includes("scarcity-low-stock"));
+  assert.ok(!idsFor(["Turn on low-stock notifications"]).includes("scarcity-low-stock"));
+  assert.ok(idsFor(["Low stock — order soon"]).includes("scarcity-low-stock"));
+});
+
+test("Temu's listing badges are popularity badges", () => {
+  const shop = ["AU$5.69", "Add to cart"];
+  for (const badge of [
+    "BEST-SELLING ITEM in Backyard Livestock",
+    "MOST REPURCHASED in Cables & Adapters",
+    "Star seller",
+    "TOP RATED in Kitchen Utensils",
+    "AMAZING FIND",
+  ]) {
+    assert.ok(idsFor([badge, ...shop]).includes("social-proof-badges"), `missed "${badge}"`);
+  }
+});
+
+test("a 'Best-Selling Items' menu link is navigation, not a badge", () => {
+  assert.ok(!idsFor(["Best-Selling Items", "AU$5.69", "Add to cart"]).includes("social-proof-badges"));
+});

@@ -36,6 +36,8 @@ const SKIP_TAGS = new Set([
 const MIN_SEGMENT_CHARS = 3;
 const MAX_SEGMENT_CHARS = 400;
 const MAX_SEGMENTS = 1500;
+// Product photos often carry the whole product title as alt text; badges are short.
+const MAX_ALT_CHARS = 60;
 
 // Rescans after the page changes: quick at first, then backing off, so a tab
 // left open on a ticking countdown costs little.
@@ -189,7 +191,11 @@ function start() {
     if (collector) {
       const config = await configPromise;
       if (config.retry) configPromise = requestStructureConfig();
-      const result = collector.collect({ declinePattern: config.declinePattern, changedSince: since });
+      const result = collector.collect({
+        declinePattern: config.declinePattern,
+        cancelPattern: config.cancelPattern,
+        changedSince: since,
+      });
       structure = result.structure;
       if (result.pendingConfirm) scheduleConfirm();
     }
@@ -210,23 +216,33 @@ function start() {
   }
 }
 
-/** The "no" wording from rules/structural-rules.json, as one pattern. */
+/** The "no" and "cancel" wording from rules/structural-rules.json, one pattern each. */
 function requestStructureConfig() {
   return chrome.runtime
     .sendMessage({ type: "NW_GET_STRUCTURE_CONFIG" })
     .then((reply) => {
       const sources = reply?.declinePatterns ?? [];
       if (!sources.length) throw new Error("no decline wording");
-      // One combined pattern, so each link on a big page costs one test, not twenty.
-      return { declinePattern: new RegExp(sources.map((source) => `(?:${source})`).join("|"), "i") };
+      return {
+        declinePattern: combine(sources),
+        cancelPattern: combine(reply?.cancelPatterns ?? []),
+      };
     })
-    .catch(() => ({ declinePattern: null, retry: true }));
+    .catch(() => ({ declinePattern: null, cancelPattern: null, retry: true }));
+}
+
+// One combined pattern, so each link on a big page costs one test, not twenty.
+function combine(sources) {
+  return sources.length ? new RegExp(sources.map((source) => `(?:${source})`).join("|"), "i") : null;
 }
 
 function hasStructure(structure) {
   return Boolean(
     structure &&
-      (structure.overlays.length || structure.groups.length || structure.checkboxes.length),
+      (structure.overlays.length ||
+        structure.groups.length ||
+        structure.checkboxes.length ||
+        structure.cancelLinks.length),
   );
 }
 
@@ -255,6 +271,17 @@ function extractVisibleText() {
 
     seen.add(text);
     segments.push(text.slice(0, MAX_SEGMENT_CHARS));
+  }
+
+  // Some badges ("AMAZING FIND", "Best seller") are pictures of words. Their
+  // alt text is what a screen reader announces, so treat it as page wording.
+  for (const image of document.images) {
+    if (segments.length >= MAX_SEGMENTS) break;
+    const alt = (image.alt ?? "").replace(/\s+/g, " ").trim();
+    if (alt.length < MIN_SEGMENT_CHARS || alt.length > MAX_ALT_CHARS || seen.has(alt)) continue;
+    if (!isVisible(image)) continue;
+    seen.add(alt);
+    segments.push(alt);
   }
 
   return segments;

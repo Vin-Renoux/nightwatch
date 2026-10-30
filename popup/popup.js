@@ -6,9 +6,11 @@
  */
 
 import { groupByCategory } from "../lib/classifier.js";
+import { recordsFor } from "../lib/records.js";
 import { friendlyUrl, skipReason, storageKeyFor } from "../lib/scope.js";
 
 const THEME_KEY = "ui:theme";
+const RECORDS_PATH = "../rules/known-records.json";
 
 const SKIP_MESSAGES = {
   search: "NightWatch skips search results, because the snippets quote text from other sites.",
@@ -22,13 +24,13 @@ const SEVERITY_LABELS = {
 };
 
 // The Gray et al. (2024) strategy names are research terms; say what each means.
-const CATEGORY_BLURBS = {
-  "Interface Interference": "Design that steers your choice",
-  Sneaking: "Things added or hidden without asking",
-  Obstruction: "Making it hard to leave or say no",
-  "Forced Action": "Making you do something before you can continue",
-  Nagging: "Interrupting you to get a yes",
-};
+// const CATEGORY_BLURBS = {
+//   "Interface Interference": "Design that steers your choice",
+//   Sneaking: "Things added or hidden without asking",
+//   Obstruction: "Making it hard to leave or say no",
+//   "Forced Action": "Making you do something before you can continue",
+//   Nagging: "Interrupting you to get a yes",
+// };
 
 // Which detection layer found it — the hybrid approach in brief §1, made visible.
 const LAYER_LABELS = {
@@ -38,6 +40,7 @@ const LAYER_LABELS = {
 
 const summaryEl = document.querySelector("#summary");
 const resultsEl = document.querySelector("#results");
+const recordsEl = document.querySelector("#records");
 const contextEl = document.querySelector("#context");
 const themeToggle = document.querySelector("#theme-toggle");
 
@@ -60,6 +63,7 @@ async function init() {
   }
 
   storageKey = storageKeyFor(url);
+  showRecords(url);
 
   const response = await chrome.runtime.sendMessage({ type: "NW_GET_RESULTS", url });
   if (!response?.ok) {
@@ -164,9 +168,9 @@ function renderCategory({ category, findings }) {
   const head = element("div", "", "category-head");
   head.append(element("h2", category), element("span", String(findings.length), "category-count"));
   section.append(head);
-
-  const blurb = CATEGORY_BLURBS[category];
-  if (blurb) section.append(element("p", blurb, "category-blurb"));
+//
+//   const blurb = CATEGORY_BLURBS[category];
+//   if (blurb) section.append(element("p", blurb, "category-blurb"));
 
   for (const finding of findings) section.append(renderFinding(finding));
   return section;
@@ -217,6 +221,37 @@ function renderFinding(finding) {
 
   details.append(body);
   return details;
+}
+
+/**
+ * Documented regulator actions against the company behind this site. Kept
+ * apart from the detections, and out of the badge count: it is what a
+ * regulator alleged about the company, not something seen on this page.
+ */
+async function showRecords(url) {
+  let data;
+  try {
+    data = await (await fetch(RECORDS_PATH)).json();
+  } catch {
+    return;
+  }
+  const records = recordsFor(url, data);
+  if (!records.length) return;
+
+  const head = element("div", "", "records-head");
+  head.append(element("h2", "On record"), element("span", "About the company, not this page", "records-hint"));
+  recordsEl.replaceChildren(head);
+
+  for (const record of records) {
+    const item = element("div", "", "record");
+    item.append(
+      element("p", record.pattern, "record-pattern"),
+      element("p", record.summary, "record-summary"),
+      element("p", record.source, "record-source"),
+    );
+    recordsEl.append(item);
+  }
+  recordsEl.hidden = false;
 }
 
 function renderContext(record) {

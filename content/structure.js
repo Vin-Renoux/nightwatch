@@ -47,6 +47,7 @@ var NightWatchStructure = (() => {
   const MAX_GROUPS = 6;
   const MAX_GROUP_CONTROLS = 6;
   const MAX_BOXES = 25;
+  const MAX_CANCEL_LINKS = 8;
   const MAX_TEXT = 300;
   const MAX_LABEL = 120;
   const SHORT_LABEL = 40;
@@ -104,10 +105,11 @@ var NightWatchStructure = (() => {
     /**
      * Measure the page.
      *   declinePattern — the "no" wording, for finding choices in the page itself
+     *   cancelPattern  — cancel/unsubscribe wording, for links that may be hidden
      *   changedSince   — when the page first changed since the last look, which is
      *                    when anything new on screen must have appeared
      */
-    function collect({ declinePattern = null, changedSince = 0 } = {}) {
+    function collect({ declinePattern = null, cancelPattern = null, changedSince = 0 } = {}) {
       const now = performance.now();
       const styleOf = memoStyles();
       const viewport = { width: innerWidth, height: innerHeight };
@@ -138,6 +140,7 @@ var NightWatchStructure = (() => {
           overlays,
           groups: findInlineChoices(layers, declinePattern, styleOf),
           checkboxes: findTickedBoxes(),
+          cancelLinks: findCancelLinks(cancelPattern, styleOf),
         },
         pendingConfirm,
       };
@@ -454,6 +457,27 @@ var NightWatchStructure = (() => {
       if (count >= 2) return node;
     }
     return null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Cancel and unsubscribe links
+
+  /**
+   * Every visible cancel or unsubscribe link, measured. A link removed from the
+   * page entirely cannot be judged here; one left on the page but made easy to
+   * miss can, and that is the pattern.
+   */
+  function findCancelLinks(cancelPattern, styleOf) {
+    if (!cancelPattern) return [];
+    const links = [];
+    for (const element of document.querySelectorAll(CONTROL_SELECTOR)) {
+      if (links.length >= MAX_CANCEL_LINKS) break;
+      const quick = clean(element.textContent);
+      if (!quick || quick.length > 60 || !cancelPattern.test(quick)) continue;
+      if (!isShown(element) || !hasBox(element)) continue;
+      links.push(measureControl(element, styleOf));
+    }
+    return links;
   }
 
   // -------------------------------------------------------------------------

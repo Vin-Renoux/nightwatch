@@ -430,3 +430,28 @@ test("a rules file with a missing threshold fails loudly", () => {
   delete broken.thresholds.biasThreshold;
   assert.throws(() => compileStructuralRules(broken), /biasThreshold/);
 });
+
+// --- hidden cancel links ------------------------------------------------------
+
+test("a tiny, faint cancel link is a hidden cancel link, and says why", () => {
+  const link = control("Cancel membership", { fontSize: "9px", color: "rgb(200, 200, 200)", width: 90, height: 12 });
+  assert.deepEqual(findingFor({ cancelLinks: [link] }, "hidden-cancel-link").evidence, [
+    "“Cancel membership” is tiny (9px text) and faint against its background.",
+  ]);
+});
+
+test("an ordinary grey footer link is not hidden", () => {
+  // #767676 on white is the classic 'just passes AA' grey: about 4.5:1.
+  const link = control("Unsubscribe", { fontSize: "12px", color: "rgb(118, 118, 118)" });
+  assert.deepEqual(idsOf({ cancelLinks: [link] }), []);
+});
+
+test("small text alone is enough to hide a cancel link", () => {
+  const link = control("Unsubscribe", { fontSize: "8px", color: "rgb(60, 60, 60)" });
+  assert.match(findingFor({ cancelLinks: [link] }, "hidden-cancel-link").evidence[0], /tiny \(8px text\)\.$/);
+});
+
+test("only cancel and unsubscribe wording is judged", () => {
+  const link = control("Terms of use", { fontSize: "8px", color: "rgb(220, 220, 220)" });
+  assert.deepEqual(idsOf({ cancelLinks: [link] }), []);
+});

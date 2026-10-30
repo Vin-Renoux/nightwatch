@@ -1,0 +1,35 @@
+{
+  "version": "0.1.0",
+  "notes": [
+    "Documented regulator actions over hard-to-cancel subscriptions — the 'hidden unsubscribe / roach motel' pattern that a single page view cannot show.",
+    "Brief §11: no unverified brand-level claims. Only legal actions by a regulator belong here, worded as what was alleged, with the agency, case and date. Never a review site, a forum, or NightWatch's own detections.",
+    "Shown in the popup as background about the company, separately from what was detected on the page, and never counted in the badge.",
+    "Bundled with the extension: nothing is looked up online (brief §4). Before relying on an entry in the report, check it against the regulator's own announcement and add its URL to 'source'."
+  ],
+  "records": [
+    {
+      "id": "ftc-amazon-prime-2023",
+      "company": "Amazon",
+      "domains": ["amazon.com", "amazon.com.au", "amazon.co.uk", "amazon.ca", "amazon.de"],
+      "pattern": "Roach Motel (Hard to Cancel)",
+      "summary": "In 2023 the US Federal Trade Commission sued Amazon, alleging it signed people up to Prime without clear consent and made cancelling deliberately difficult through a multi-step process. Amazon settled the case in 2025.",
+      "source": "US Federal Trade Commission, FTC v. Amazon.com, Inc. (filed June 2023; settled September 2025)"
+    },
+    {
+      "id": "doj-ftc-adobe-2024",
+      "company": "Adobe",
+      "domains": ["adobe.com"],
+      "pattern": "Roach Motel (Hard to Cancel)",
+      "summary": "In 2024 the US Department of Justice, referred by the Federal Trade Commission, sued Adobe, alleging it hid an early termination fee and made subscriptions hard to cancel.",
+      "source": "US Department of Justice on behalf of the FTC, United States v. Adobe Inc. (filed June 2024)"
+    },
+    {
+      "id": "ftc-uber-one-2025",
+      "company": "Uber",
+      "domains": ["uber.com"],
+      "pattern": "Roach Motel (Hard to Cancel)",
+      "summary": "In 2025 the US Federal Trade Commission sued Uber, alleging it charged people for Uber One without consent and made the subscription hard to cancel.",
+      "source": "US Federal Trade Commission, FTC v. Uber Technologies, Inc. (filed April 2025)"
+    }
+  ]
+}

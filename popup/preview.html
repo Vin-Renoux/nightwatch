@@ -19,6 +19,7 @@
       http://localhost:8000/popup/preview.html?theme=light
       http://localhost:8000/popup/preview.html?open=2       (first two findings opened)
       http://localhost:8000/popup/preview.html?empty=1      (no findings)
+      http://localhost:8000/popup/preview.html?url=https://www.amazon.com.au/   (an "On record" site)
   -->
   <script>
     // Measured from tests/fixtures/mock-popups.html and mock-checkout.html.
@@ -59,6 +60,7 @@
 
     const params = new URLSearchParams(location.search);
     if (params.get("empty") === "1") record.findings = [];
+    if (params.get("url")) record.url = params.get("url");
     const stored = { "ui:theme": params.get("theme") === "light" ? "light" : "dark" };
 
     window.chrome = {

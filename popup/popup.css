@@ -299,6 +299,62 @@ body {
   color: var(--ink-soft);
 }
 
+/* ---------- on record ---------- */
+
+.records {
+  margin: 12px 14px 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+}
+
+.records[hidden] {
+  display: none;
+}
+
+.records-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.records-head h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.records-hint {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.record {
+  margin-top: 8px;
+}
+
+.record-pattern {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.record-summary {
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+}
+
+.record-source {
+  margin: 5px 0 0;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
 /* ---------- categories ---------- */
 
 .results {

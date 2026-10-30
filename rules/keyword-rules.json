@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0",
+  "version": "0.5.0",
   "taxonomy": "Gray et al. (2024) five high-level strategies",
   "notes": [
     "Layer 1 (text) rules only. Each rule maps to exactly one of the five high-level strategies so the popup can group results consistently (brief 6.3).",
@@ -29,7 +29,11 @@
         "\\bwhile stocks last\\b",
         "\\bnearly gone\\b"
       ],
-      "notPatterns": ["\\b(in|back in) stock now\\b", "\\bplenty (of|in) stock\\b"]
+      "notPatterns": [
+        "\\b(in|back in) stock now\\b",
+        "\\bplenty (of|in) stock\\b",
+        "\\blow[- ]stock (items? )?(alerts?|notifications?|reminders?)\\b"
+      ]
     },
     {
       "id": "urgency-deadline",
@@ -80,6 +84,11 @@
         "\\bbest ?seller\\b",
         "\\b#1 best\\b",
         "\\btop \\d+ bestseller\\b",
+        "\\bbest[- ]selling item\\b(?!s)",
+        "\\bmost repurchased\\b",
+        "\\bstar seller\\b",
+        "\\btop[- ]rated in\\b",
+        "\\bamazing find\\b",
         "\\bmost popular\\b",
         "\\bcustomer favou?rite\\b",
         "\\btrending now\\b",

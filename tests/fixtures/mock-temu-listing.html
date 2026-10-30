@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Temu Listing — NightWatch test fixture</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; color: #222; }
+    nav { display: flex; gap: 20px; padding: 14px 32px; background: #2e7d32; color: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 24px 32px; }
+    .item { border-radius: 8px; padding: 10px; background: #fafafa; }
+    .photo { height: 140px; background: #e8e8e8; border-radius: 6px; margin-bottom: 8px; }
+    .badge { color: #fb7701; font-weight: 600; font-size: 13px; }
+    .star { display: inline-block; margin-top: 4px; padding: 1px 6px; border-radius: 4px; background: #6b2fa0; color: #fff; font-size: 12px; }
+    footer { margin-top: 40px; padding: 28px 32px; background: #222; color: #eee; }
+    footer ul { columns: 2; padding: 0; list-style: none; }
+  </style>
+</head>
+<body>
+  <!--
+    Reproduces docs/Screenshot_20261031_093614.png (Temu's listing badges) and
+    docs/Screenshot_20261031_093607.png (the app-download footer).
+
+    Expected: Popularity Badges — including "AMAZING FIND", which is a picture
+    and only readable through its alt text — and Social Proof Pressure ("505 sold").
+    Not expected: Scarcity Claim from the footer's "Low stock items alerts",
+    which is an app feature, nor a badge for the "Best-Selling Items" menu link.
+  -->
+  <nav><span>Best-Selling Items</span><span>5-Star Rated</span><span>New In</span><span>Cart</span></nav>
+
+  <main class="grid">
+    <div class="item"><div class="photo"></div>Garden Hose Reel<div>AU$5.69 · 505 sold</div>
+      <div class="badge">BEST-SELLING ITEM in Backyard Livestock</div><span class="star">Star seller</span></div>
+    <div class="item"><div class="photo"></div>USB-C Cable 2 m<div>AU$3.67</div>
+      <div class="badge">MOST REPURCHASED in Cables &amp; Adapters</div></div>
+    <div class="item"><div class="photo"></div>Silicone Spatula Set<div>AU$3.52</div>
+      <div class="badge">TOP RATED in Kitchen Utensils</div></div>
+    <div class="item"><div class="photo"></div>Storage Basket
+      <div><img alt="AMAZING FIND" width="96" height="18"
+        src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='18'><rect width='96' height='18' fill='%23e02020'/></svg>" /></div>
+      <div>AU$2.99</div></div>
+  </main>
+
+  <footer>
+    <strong>Download the Temu App</strong>
+    <ul>
+      <li>Price-drop alerts</li>
+      <li>Track orders any time</li>
+      <li>Faster &amp; more secure checkout</li>
+      <li>Low stock items alerts</li>
+      <li>Exclusive offers</li>
+      <li>Coupons &amp; offers alerts</li>
+    </ul>
+  </footer>
+</body>
+</html>

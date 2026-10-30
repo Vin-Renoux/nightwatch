@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Membership Page — NightWatch test fixture</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f6f6f6; color: #222; }
+    main { max-width: 620px; margin: 40px auto; padding: 28px; background: #fff; border-radius: 12px; }
+    .keep { display: block; width: 100%; height: 48px; border: 0; border-radius: 8px; background: #7c3aed;
+      color: #fff; font-size: 16px; font-weight: 600; margin: 24px 0 120px; }
+    .leave { font-size: 9px; color: #cfcfcf; text-decoration: none; }
+    footer { max-width: 620px; margin: 0 auto 40px; font-size: 12px; }
+    footer a { color: #555; margin-right: 16px; }
+  </style>
+</head>
+<body>
+  <!--
+    A membership page where joining was one click but the way out is a 9px,
+    near-white link far below everything else.
+
+    Expected: Hidden Cancel Link ("Cancel membership").
+    Not expected: the ordinary footer "Unsubscribe from emails" link, which is
+    small but plainly readable.
+  -->
+  <main>
+    <h1>Lumen Plus</h1>
+    <p>Member since March 2024. Free delivery, early sale access and members-only prices.</p>
+    <p>Next billing date: 12 December.</p>
+    <button class="keep">Keep my benefits</button>
+    <a href="#" class="leave">Cancel membership</a>
+  </main>
+  <footer>
+    <a href="#">Help centre</a>
+    <a href="#">Privacy</a>
+    <a href="#">Unsubscribe from emails</a>
+  </footer>
+</body>
+</html>
