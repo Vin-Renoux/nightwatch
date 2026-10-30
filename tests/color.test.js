@@ -74,3 +74,11 @@ test("chroma separates colourful from grey", () => {
   assert.ok(chroma([253, 56, 79]) > 0.7);
   assert.ok(chroma([242, 242, 242]) < 0.01);
 });
+
+test("reads hex colours as written in stylesheets", () => {
+  assert.deepEqual(parseCssColor("#fff"), [255, 255, 255, 1]);
+  assert.deepEqual(parseCssColor("#0B1022"), [11, 16, 34, 1]);
+  assert.deepEqual(parseCssColor("#00000080"), [0, 0, 0, 128 / 255]);
+  assert.equal(parseCssColor("#12345"), null);
+  assert.equal(parseCssColor("#zzzzzz"), null);
+});

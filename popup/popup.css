@@ -1,40 +1,88 @@
-/* Plain CSS, no framework — the extension has to stay light (brief §11). */
+/*
+ * NightWatch popup. Plain CSS, no framework and no web fonts — the extension
+ * has to stay light (brief §11).
+ *
+ * Two themes, chosen with the toggle in the header and remembered in
+ * chrome.storage.local:
+ *   night (default) — the brand: a starry sky and moonlight-gold accents;
+ *   day             — the same layout on warm paper, for bright rooms.
+ * tests/popup-theme.test.js checks the text colours in both blocks below
+ * against WCAG contrast, so keep each theme's colours inside its block.
+ */
 
-:root {
-  color-scheme: light dark;
+/* ---------- night theme ---------- */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
 
-  --topbar: #141a2e;
-  --topbar-ink: #f3efdd;
-  --bg: #ffffff;
-  --card: #ffffff;
-  --line: #e5e8f0;
-  --ink: #161b26;
-  --ink-soft: #5b6478;
-  --ink-faint: #8890a2;
-  --quote: #f6f7fa;
-  --alert: #cf4038;
-  --alert-bg: #fdf1f0;
-  --high: #cf4038;
-  --medium: #c97a1c;
-  --low: #8790a3;
-  --radius: 12px;
+  --bg: #0b1022;
+  --card: #131b34;
+  --card-hover: #18213f;
+  --line: #243056;
+  --ink: #eef0f8;
+  --ink-soft: #b7bfd6;
+  --ink-faint: #929bb7;
+  --accent: #f2e3b6;
+  --chip-bg: #2a3150;
+  --chip-ink: #eadfbd;
+  --quote: #0e1530;
+  --sev-high: #ff6b6b;
+  --sev-medium: #f5a35c;
+  --sev-low: #8792b4;
+
+  --sky: radial-gradient(120% 140% at 85% 0%, #2b3a7a 0%, rgba(43, 58, 122, 0) 55%),
+    linear-gradient(165deg, #0a0f22 0%, #141d45 100%);
+  --sky-ink: #f4f1e6;
+  --moon: #f2e3b6;
+  --moon-glow: rgba(242, 227, 182, 0.55);
+  --stars: 1;
+  --hero: linear-gradient(135deg, #18214a 0%, #121a36 100%);
+  --toggle-bg: rgba(255, 255, 255, 0.08);
+  --toggle-ink: #f2e3b6;
+  --sky-edge: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --topbar: #0d1120;
-    --bg: #151925;
-    --card: #1c2130;
-    --line: #2b3242;
-    --ink: #e8ebf3;
-    --ink-soft: #a6aec0;
-    --ink-faint: #7f889b;
-    --quote: #232939;
-    --alert: #ff7268;
-    --alert-bg: #2b1b1c;
-    --high: #ff7268;
-    --medium: #e3a04a;
-    --low: #8790a3;
+/* ---------- day theme ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f6f3ea;
+  --card: #ffffff;
+  --card-hover: #fdfbf5;
+  --line: #e4ddcc;
+  --ink: #151b30;
+  --ink-soft: #454d65;
+  --ink-faint: #5f677e;
+  --accent: #1c2758;
+  --chip-bg: #f1ead7;
+  --chip-ink: #5b4a1c;
+  --quote: #f7f4ec;
+  --sev-high: #d1403c;
+  --sev-medium: #c0670d;
+  --sev-low: #7f88a0;
+
+  --sky: radial-gradient(120% 160% at 90% 0%, #ffe6b8 0%, rgba(255, 230, 184, 0) 60%),
+    linear-gradient(165deg, #fdf1dc 0%, #dfe8fa 100%);
+  --sky-ink: #151b30;
+  --moon: #1c2758;
+  --moon-glow: rgba(28, 39, 88, 0);
+  --stars: 0;
+  --hero: linear-gradient(135deg, #ffffff 0%, #fbf7ec 100%);
+  --toggle-bg: rgba(28, 39, 88, 0.08);
+  --toggle-ink: #1c2758;
+  --sky-edge: #e4ddcc;
+}
+
+/* Hold the page back until popup.js has applied the saved theme, so a day-mode
+   user never sees a flash of night. Shown anyway after 300 ms if that fails. */
+html:not([data-theme]) body {
+  visibility: hidden;
+  animation: reveal 0s 300ms forwards;
+}
+
+@keyframes reveal {
+  to {
+    visibility: visible;
   }
 }
 
@@ -45,7 +93,7 @@
 body {
   width: 360px;
   margin: 0;
-  padding: 0 0 4px;
+  padding-bottom: 6px;
   background: var(--bg);
   color: var(--ink);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -54,113 +102,305 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- header ---------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
-.topbar {
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- header: the night sky ---------- */
+
+.sky {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 13px 16px;
-  background: var(--topbar);
-  color: var(--topbar-ink);
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--sky-edge);
+  background: var(--sky);
+  color: var(--sky-ink);
+  overflow: hidden;
 }
 
-.mark {
-  font-size: 15px;
-  line-height: 1;
+/* A scatter of stars, drawn with gradients rather than an image. */
+.sky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: var(--stars);
+  pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 12% 30%, #fff 60%, transparent 61%),
+    radial-gradient(1px 1px at 27% 72%, #fff 60%, transparent 61%),
+    radial-gradient(1.4px 1.4px at 41% 22%, #fff 60%, transparent 61%),
+    radial-gradient(1px 1px at 55% 64%, rgba(255, 255, 255, 0.8) 60%, transparent 61%),
+    radial-gradient(1.2px 1.2px at 66% 34%, #fff 60%, transparent 61%),
+    radial-gradient(1px 1px at 74% 80%, rgba(255, 255, 255, 0.7) 60%, transparent 61%),
+    radial-gradient(1px 1px at 88% 52%, #fff 60%, transparent 61%),
+    radial-gradient(1.4px 1.4px at 95% 18%, rgba(255, 255, 255, 0.9) 60%, transparent 61%);
 }
 
-.topbar h1 {
+.brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.moon {
+  width: 24px;
+  height: 24px;
+  fill: var(--moon);
+  filter: drop-shadow(0 0 6px var(--moon-glow));
+}
+
+.brand h1 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 
-.tally {
-  margin-left: auto;
-  min-width: 22px;
-  padding: 2px 8px;
+.theme-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
-  background: var(--alert);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
+  background: var(--toggle-bg);
+  color: var(--toggle-ink);
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-/* ---------- status ---------- */
+.theme-toggle:hover {
+  background: color-mix(in srgb, var(--toggle-bg), currentColor 12%);
+}
 
-.status {
-  margin: 14px 16px;
+.theme-toggle svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.theme-toggle .icon-moon {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Show the mode you would switch *to*. */
+.theme-toggle .icon-moon,
+:root[data-theme="light"] .theme-toggle .icon-sun {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-toggle .icon-moon {
+  display: block;
+}
+
+/* ---------- summary ---------- */
+
+.summary {
+  margin: 14px 14px 4px;
+}
+
+.status,
+.note {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
   color: var(--ink-soft);
 }
 
-.status.alert {
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  background: var(--alert-bg);
-  color: var(--alert);
+.tally {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--hero);
+}
+
+.tally-number {
+  min-width: 44px;
+  font-size: 40px;
+  font-weight: 750;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.tally-label {
+  margin: 0;
+  font-size: 14px;
   font-weight: 600;
+  color: var(--ink);
+}
+
+.tally-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.tally-breakdown li::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--sev);
+  vertical-align: 1px;
+}
+
+.quiet {
+  padding: 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--hero);
+  text-align: center;
+}
+
+.quiet-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.quiet p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* ---------- categories ---------- */
+
+.results {
+  padding: 0 14px;
+}
+
+.category {
+  margin-top: 16px;
+}
+
+.category-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 2px;
+}
+
+.category-head h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.category-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.category-blurb {
+  margin: 1px 2px 8px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
 }
 
 /* ---------- findings ---------- */
 
-.results {
-  padding: 0 16px;
+.severity-high {
+  --sev: var(--sev-high);
 }
 
-.category + .category {
-  margin-top: 18px;
+.severity-medium {
+  --sev: var(--sev-medium);
 }
 
-.category h2 {
-  margin: 0 0 8px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+.severity-low {
+  --sev: var(--sev-low);
 }
 
 .finding {
-  padding: 12px 14px;
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 14px;
   background: var(--card);
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .finding + .finding {
-  margin-top: 8px;
+  margin-top: 7px;
 }
 
-.finding-head {
+/* The severity bar down the left edge. */
+.finding::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--sev);
+}
+
+.finding:hover,
+.finding[open] {
+  background: var(--card-hover);
+}
+
+.finding[open] {
+  border-color: color-mix(in srgb, var(--line), var(--sev) 35%);
+}
+
+.finding summary {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 12px 12px 12px 18px;
+  cursor: pointer;
+  list-style: none;
 }
 
-.dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--low);
+.finding summary::-webkit-details-marker {
+  display: none;
 }
 
-.dot.high {
-  background: var(--high);
-}
-
-.dot.medium {
-  background: var(--medium);
-}
-
-.finding h3 {
-  margin: 0;
+.finding-name {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 14.5px;
   font-weight: 650;
   letter-spacing: -0.005em;
@@ -168,44 +408,66 @@ body {
 
 .layer {
   flex: none;
-  padding: 1px 7px;
+  padding: 1px 8px;
   border-radius: 999px;
-  background: var(--quote);
-  color: var(--ink-soft);
+  background: var(--chip-bg);
+  color: var(--chip-ink);
   font-size: 10.5px;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: 0.02em;
 }
 
 .seen {
-  margin-left: auto;
   flex: none;
   font-size: 11px;
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
 }
 
+.chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+
+.finding[open] .chevron {
+  transform: rotate(180deg);
+}
+
+.finding-body {
+  padding: 0 14px 14px 18px;
+}
+
 .mechanism {
-  margin: 2px 0 0 16px;
+  margin: 0;
   font-size: 11.5px;
   color: var(--ink-faint);
 }
 
+.mechanism span {
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+
 .explanation {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--ink-soft);
 }
 
 .evidence {
   margin: 10px 0 0;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 8px 11px;
+  border-left: 2px solid var(--sev);
+  border-radius: 4px 10px 10px 4px;
   background: var(--quote);
   font-size: 12px;
   color: var(--ink-soft);
-}
-
-.evidence li {
   list-style: none;
 }
 
@@ -220,11 +482,30 @@ body {
   color: var(--ink-faint);
 }
 
+/* A smooth open and close where the browser supports animating <details>. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports selector(::details-content) {
+    :root {
+      interpolate-size: allow-keywords;
+    }
+
+    .finding::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition: block-size 0.22s ease, content-visibility 0.22s allow-discrete;
+    }
+
+    .finding[open]::details-content {
+      block-size: auto;
+    }
+  }
+}
+
 /* ---------- footer ---------- */
 
 .context {
   margin: 16px 16px 8px;
-  padding-top: 12px;
+  padding-top: 11px;
   border-top: 1px solid var(--line);
   font-size: 11px;
   color: var(--ink-faint);

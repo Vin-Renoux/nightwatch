@@ -2,30 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>NightWatch</title>
+  <title>NightWatch popup preview</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
   <!--
     Development harness — not part of the extension's behaviour.
 
-    Renders popup.js against a fixed set of findings with chrome.* stubbed, so
-    the popup layout can be checked (and screenshotted for the report) without
-    loading the extension and finding a live page that triggers every rule.
+    Loads the real popup.html markup and popup.js against a fixed set of
+    findings, with chrome.* stubbed, so the layout can be checked (and
+    screenshotted for the report) without loading the extension.
 
     Serve the project root over HTTP, since ES modules will not load from
     file:// — python3 -m http.server 8000 — then open
-    http://localhost:8000/popup/preview.html
+      http://localhost:8000/popup/preview.html
+      http://localhost:8000/popup/preview.html?theme=light
+      http://localhost:8000/popup/preview.html?open=2       (first two findings opened)
+      http://localhost:8000/popup/preview.html?empty=1      (no findings)
   -->
-  <header class="topbar">
-    <span class="mark" aria-hidden="true">🌙</span>
-    <h1>NightWatch</h1>
-    <span id="tally" class="tally" hidden></span>
-  </header>
-  <p id="status" class="status" role="status">Checking this page…</p>
-  <div id="results" class="results"></div>
-  <footer id="context" class="context"></footer>
-
   <script>
     // Measured from tests/fixtures/mock-popups.html and mock-checkout.html.
     const record = {
@@ -62,12 +56,34 @@
           evidence: ["Subscribe to notifications"] },
       ],
     };
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("empty") === "1") record.findings = [];
+    const stored = { "ui:theme": params.get("theme") === "light" ? "light" : "dark" };
+
     window.chrome = {
       tabs: { query: async () => [{ url: record.url }] },
       runtime: { sendMessage: async () => ({ ok: true, record }) },
-      storage: { onChanged: { addListener() {} } },
+      storage: {
+        local: {
+          get: async (key) => ({ [key]: stored[key] }),
+          set: async (values) => Object.assign(stored, values),
+        },
+        onChanged: { addListener() {} },
+      },
     };
   </script>
-  <script type="module" src="popup.js"></script>
+  <script type="module">
+    // Use the real popup markup rather than a copy that can drift from it.
+    const html = await (await fetch("popup.html")).text();
+    const page = new DOMParser().parseFromString(html, "text/html");
+    document.body.replaceChildren(...[...page.body.children].filter((node) => node.tagName !== "SCRIPT"));
+    await import("./popup.js");
+
+    const opened = Number(new URLSearchParams(location.search).get("open") ?? 0);
+    setTimeout(() => {
+      [...document.querySelectorAll("details.finding")].slice(0, opened).forEach((d) => (d.open = true));
+    }, 50);
+  </script>
 </body>
 </html>

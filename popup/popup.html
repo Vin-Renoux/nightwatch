@@ -6,13 +6,33 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header class="topbar">
-    <span class="mark" aria-hidden="true">🌙</span>
-    <h1>NightWatch</h1>
-    <span id="tally" class="tally" hidden></span>
+  <header class="sky">
+    <div class="brand">
+      <!-- The same crescent as the toolbar icon: one circle with a bite taken out. -->
+      <svg class="moon" viewBox="0 0 32 32" aria-hidden="true">
+        <mask id="moon-bite">
+          <rect width="32" height="32" fill="#fff" />
+          <circle cx="22.5" cy="10" r="10.5" fill="#000" />
+        </mask>
+        <circle cx="15" cy="17" r="12.5" mask="url(#moon-bite)" />
+      </svg>
+      <h1>NightWatch</h1>
+    </div>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" title="Light mode">
+      <span class="visually-hidden">Light mode</span>
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.2" />
+        <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7" />
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M16 3.5a8.6 8.6 0 1 0 4.5 15.2A7.2 7.2 0 1 1 16 3.5z" />
+      </svg>
+    </button>
   </header>
 
-  <p id="status" class="status" role="status">Checking this page…</p>
+  <section id="summary" class="summary" aria-live="polite">
+    <p class="status">Checking this page…</p>
+  </section>
   <div id="results" class="results"></div>
   <footer id="context" class="context"></footer>
 

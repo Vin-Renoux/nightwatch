@@ -8,6 +8,8 @@
 import { groupByCategory } from "../lib/classifier.js";
 import { friendlyUrl, skipReason, storageKeyFor } from "../lib/scope.js";
 
+const THEME_KEY = "ui:theme";
+
 const SKIP_MESSAGES = {
   search: "NightWatch skips search results, because the snippets quote text from other sites.",
   unsupported: "NightWatch only works on normal web pages.",
@@ -19,28 +21,41 @@ const SEVERITY_LABELS = {
   low: "Lower concern",
 };
 
+// The Gray et al. (2024) strategy names are research terms; say what each means.
+const CATEGORY_BLURBS = {
+  "Interface Interference": "Design that steers your choice",
+  Sneaking: "Things added or hidden without asking",
+  Obstruction: "Making it hard to leave or say no",
+  "Forced Action": "Making you do something before you can continue",
+  Nagging: "Interrupting you to get a yes",
+};
+
 // Which detection layer found it — the hybrid approach in brief §1, made visible.
 const LAYER_LABELS = {
   text: { label: "Wording", title: "Found by reading what the page says" },
   structure: { label: "Layout", title: "Found by checking how the page is built" },
 };
 
-const statusEl = document.querySelector("#status");
+const summaryEl = document.querySelector("#summary");
 const resultsEl = document.querySelector("#results");
 const contextEl = document.querySelector("#context");
-const tallyEl = document.querySelector("#tally");
+const themeToggle = document.querySelector("#theme-toggle");
 
+// Findings the shopper has opened, kept open when a rescan redraws the list.
+const openFindings = new Set();
 let storageKey = null;
 
 init();
 
 async function init() {
+  await initTheme();
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url = tab?.url ?? "";
 
   const skipped = skipReason(url);
   if (skipped) {
-    setStatus(SKIP_MESSAGES[skipped]);
+    showNote(SKIP_MESSAGES[skipped]);
     return;
   }
 
@@ -48,7 +63,7 @@ async function init() {
 
   const response = await chrome.runtime.sendMessage({ type: "NW_GET_RESULTS", url });
   if (!response?.ok) {
-    setStatus("Could not read results. Try reloading the page.");
+    showNote("Could not read results. Try reloading the page.");
     return;
   }
 
@@ -63,6 +78,34 @@ async function init() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Theme
+
+async function initTheme() {
+  let theme = "dark";
+  try {
+    const stored = await chrome.storage.local.get(THEME_KEY);
+    if (stored[THEME_KEY] === "light") theme = "light";
+  } catch {
+    // Storage unavailable: stay on the default night theme.
+  }
+  applyTheme(theme);
+
+  themeToggle.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    applyTheme(next);
+    chrome.storage.local.set({ [THEME_KEY]: next }).catch(() => {});
+  });
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  themeToggle.setAttribute("aria-pressed", String(theme === "light"));
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+
 function render(record, url) {
   resultsEl.replaceChildren();
   contextEl.replaceChildren();
@@ -70,7 +113,7 @@ function render(record, url) {
   if (!record) {
     // Content scripts do not run on local files unless the user turns on
     // "Allow access to file URLs", which is easy to miss when testing fixtures.
-    setStatus(
+    showNote(
       url.startsWith("file:")
         ? "Nothing scanned here yet. For local files, turn on “Allow access to file URLs” on the NightWatch card in chrome://extensions, then reload the page."
         : "Nothing scanned here yet — reload the page, then reopen NightWatch.",
@@ -78,74 +121,102 @@ function render(record, url) {
     return;
   }
 
-  const count = record.findings.length;
-  setTally(count);
+  const { findings } = record;
+  summaryEl.replaceChildren(findings.length ? renderTally(findings) : renderQuiet());
 
-  if (count === 0) {
-    setStatus("No dark patterns found in this page's text.");
-    renderContext(record);
-    return;
-  }
-
-  setStatus(`Warning — ${count} dark pattern${count === 1 ? "" : "s"} found on this page.`, true);
-
-  for (const group of groupByCategory(record.findings)) {
+  for (const group of groupByCategory(findings)) {
     resultsEl.append(renderCategory(group));
   }
   renderContext(record);
 }
 
+function renderTally(findings) {
+  const count = findings.length;
+  const tally = element("div", "", "tally");
+  tally.append(element("span", String(count), "tally-number"));
+
+  const words = document.createElement("div");
+  words.append(
+    element("p", `dark pattern${count === 1 ? "" : "s"} found on this page`, "tally-label"),
+  );
+
+  const breakdown = element("ul", "", "tally-breakdown");
+  for (const severity of ["high", "medium", "low"]) {
+    const n = findings.filter((finding) => finding.severity === severity).length;
+    if (n) breakdown.append(element("li", `${n} ${SEVERITY_LABELS[severity].toLowerCase()}`, `severity-${severity}`));
+  }
+  words.append(breakdown);
+  tally.append(words);
+  return tally;
+}
+
+function renderQuiet() {
+  const quiet = element("div", "", "quiet");
+  quiet.append(
+    element("p", "All quiet", "quiet-title"),
+    element("p", "No dark patterns found in this page's wording or layout."),
+  );
+  return quiet;
+}
+
 function renderCategory({ category, findings }) {
-  const section = document.createElement("section");
-  section.className = "category";
-  section.append(element("h2", category));
+  const section = element("section", "", "category");
+  const head = element("div", "", "category-head");
+  head.append(element("h2", category), element("span", String(findings.length), "category-count"));
+  section.append(head);
+
+  const blurb = CATEGORY_BLURBS[category];
+  if (blurb) section.append(element("p", blurb, "category-blurb"));
+
   for (const finding of findings) section.append(renderFinding(finding));
   return section;
 }
 
+/** One collapsible row: the pattern's name up front, the detail on demand. */
 function renderFinding(finding) {
-  const article = document.createElement("article");
-  article.className = "finding";
+  const details = element("details", "", `finding severity-${finding.severity}`);
+  details.open = openFindings.has(finding.id);
+  details.addEventListener("toggle", () => {
+    if (details.open) openFindings.add(finding.id);
+    else openFindings.delete(finding.id);
+  });
 
-  const head = document.createElement("div");
-  head.className = "finding-head";
-
-  const dot = document.createElement("span");
-  dot.className = `dot ${finding.severity}`;
-  dot.setAttribute("role", "img");
-  dot.setAttribute("aria-label", SEVERITY_LABELS[finding.severity] ?? "");
-  head.append(dot, element("h3", finding.approach));
+  const summary = document.createElement("summary");
+  summary.append(element("span", finding.approach, "finding-name"));
 
   const layer = LAYER_LABELS[finding.layer];
   if (layer) {
     const chip = element("span", layer.label, "layer");
     chip.title = layer.title;
-    head.append(chip);
+    summary.append(chip);
   }
-
   if (finding.matchCount > 1) {
-    head.append(element("span", `${finding.matchCount}×`, "seen"));
+    const seen = element("span", `${finding.matchCount}×`, "seen");
+    seen.title = `Seen ${finding.matchCount} times on this page`;
+    summary.append(seen);
   }
+  // Colour alone never carries meaning: say the severity for screen readers.
+  summary.append(element("span", SEVERITY_LABELS[finding.severity] ?? "", "visually-hidden"));
+  summary.append(chevron());
+  details.append(summary);
 
-  article.append(head);
-  article.append(element("p", `Plays on: ${finding.mechanism}`, "mechanism"));
-  article.append(element("p", finding.explanation, "explanation"));
+  const body = element("div", "", "finding-body");
+  const mechanism = element("p", "", "mechanism");
+  mechanism.append(element("span", "Plays on "), document.createTextNode(finding.mechanism));
+  body.append(mechanism, element("p", finding.explanation, "explanation"));
 
   if (finding.evidence.length > 0) {
-    const list = document.createElement("ul");
-    list.className = "evidence";
+    const list = element("ul", "", "evidence");
     // Wording evidence is quoted straight off the page; layout evidence is
     // NightWatch's own description of what it measured, so it is not.
     const quoted = finding.layer !== "structure";
     for (const line of finding.evidence) list.append(element("li", quoted ? `“${line}”` : line));
-    article.append(list);
+    body.append(list);
   }
+  if (finding.source) body.append(element("p", finding.source, "source"));
 
-  if (finding.source) {
-    article.append(element("p", finding.source, "source"));
-  }
-
-  return article;
+  details.append(body);
+  return details;
 }
 
 function renderContext(record) {
@@ -154,19 +225,24 @@ function renderContext(record) {
   contextEl.append(element("span", `Scanned ${when} · wording and layout checked`));
 }
 
-function setStatus(text, isAlert = false) {
-  statusEl.textContent = text;
-  statusEl.classList.toggle("alert", isAlert);
+function showNote(text) {
+  summaryEl.replaceChildren(element("p", text, "note"));
 }
 
-function setTally(count) {
-  tallyEl.textContent = String(count);
-  tallyEl.hidden = count === 0;
+function chevron() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("class", "chevron");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M4 6l4 4 4-4");
+  svg.append(path);
+  return svg;
 }
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
-  node.textContent = text;
+  if (text) node.textContent = text;
   if (className) node.className = className;
   return node;
 }
