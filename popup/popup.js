@@ -19,6 +19,12 @@ const SEVERITY_LABELS = {
   low: "Lower concern",
 };
 
+// Which detection layer found it — the hybrid approach in brief §1, made visible.
+const LAYER_LABELS = {
+  text: { label: "Wording", title: "Found by reading what the page says" },
+  structure: { label: "Layout", title: "Found by checking how the page is built" },
+};
+
 const statusEl = document.querySelector("#status");
 const resultsEl = document.querySelector("#results");
 const contextEl = document.querySelector("#context");
@@ -110,6 +116,13 @@ function renderFinding(finding) {
   dot.setAttribute("aria-label", SEVERITY_LABELS[finding.severity] ?? "");
   head.append(dot, element("h3", finding.approach));
 
+  const layer = LAYER_LABELS[finding.layer];
+  if (layer) {
+    const chip = element("span", layer.label, "layer");
+    chip.title = layer.title;
+    head.append(chip);
+  }
+
   if (finding.matchCount > 1) {
     head.append(element("span", `${finding.matchCount}×`, "seen"));
   }
@@ -121,7 +134,10 @@ function renderFinding(finding) {
   if (finding.evidence.length > 0) {
     const list = document.createElement("ul");
     list.className = "evidence";
-    for (const quote of finding.evidence) list.append(element("li", `“${quote}”`));
+    // Wording evidence is quoted straight off the page; layout evidence is
+    // NightWatch's own description of what it measured, so it is not.
+    const quoted = finding.layer !== "structure";
+    for (const line of finding.evidence) list.append(element("li", quoted ? `“${line}”` : line));
     article.append(list);
   }
 
@@ -135,9 +151,7 @@ function renderFinding(finding) {
 function renderContext(record) {
   const when = new Date(record.scannedAt).toLocaleTimeString();
   contextEl.append(element("span", friendlyUrl(record.url), "context-url"));
-  contextEl.append(
-    element("span", `Scanned ${when} · text checks only, structural checks still to come`),
-  );
+  contextEl.append(element("span", `Scanned ${when} · wording and layout checked`));
 }
 
 function setStatus(text, isAlert = false) {

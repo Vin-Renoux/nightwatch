@@ -13,6 +13,7 @@ import {
   classifySegments,
   commerceScore,
   compileRules,
+  foldScan,
   groupByCategory,
   looksLikeShop,
   mergeFindings,
@@ -292,4 +293,48 @@ test("commerce signals have to be different from each other", () => {
 test("commerce scoring tolerates malformed input", () => {
   assert.equal(commerceScore(undefined), 0);
   assert.equal(commerceScore([null, 42]), 0);
+});
+
+// Regression tests for the wording in docs/Screenshot_20260915_222652.png and
+// docs/Screenshot_20260915_190443.png.
+test("a free trial with words in between is still a free trial", () => {
+  for (const text of ["Free 30-day Pro trial", "Start your 7 day trial", "30-day free trial"]) {
+    assert.ok(idsFor([text]).includes("forced-continuity"), `missed "${text}"`);
+  }
+  // A full stop ends the thought: this is about shipping, not a trial.
+  assert.ok(!idsFor(["Free shipping. Trial sizes available"]).includes("forced-continuity"));
+});
+
+test("subscribing to notifications is notification nagging", () => {
+  assert.ok(idsFor(["Subscribe to notifications"]).includes("nagging-notifications"));
+});
+
+test("text findings are marked as wording findings", () => {
+  const [finding] = classifySegments(["Only 1 left in stock"], rules);
+  assert.equal(finding.layer, "text");
+});
+
+// Layer 2 can settle what Layer 1 could only guess at from wording.
+test("folding a scan drops findings the layout check has settled", () => {
+  const guess = classifySegments(["Accept all cookies", "Manage preferences"], rules);
+  assert.ok(guess.some((finding) => finding.id === "biased-cookie-choices"));
+
+  const folded = foldScan(null, guess, ["biased-cookie-choices"]);
+  assert.ok(!folded.findings.some((finding) => finding.id === "biased-cookie-choices"));
+  assert.deepEqual(folded.superseded, ["biased-cookie-choices"]);
+});
+
+test("a settled guess stays settled when a later scan repeats it", () => {
+  const guess = classifySegments(["Accept all cookies", "Manage preferences"], rules);
+  const first = foldScan(null, [], ["biased-cookie-choices"]);
+  // The next scan has no layout measurement but re-reads the same wording.
+  const second = foldScan(first, guess, []);
+  assert.ok(!second.findings.some((finding) => finding.id === "biased-cookie-choices"));
+  assert.deepEqual(second.superseded, ["biased-cookie-choices"]);
+});
+
+test("folding keeps everything that was not settled", () => {
+  const scan = classifySegments(["Only 1 left in stock", "Join our newsletter"], rules);
+  const folded = foldScan({ findings: [], superseded: [] }, scan, ["biased-cookie-choices"]);
+  assert.equal(folded.findings.length, 2);
 });

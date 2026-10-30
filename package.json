@@ -5,6 +5,7 @@
   "description": "Browser extension that detects and explains dark patterns on e-commerce sites.",
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:e2e": "node tests/e2e/run.mjs"
   }
 }

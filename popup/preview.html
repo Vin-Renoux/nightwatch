@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NightWatch</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!--
+    Development harness — not part of the extension's behaviour.
+
+    Renders popup.js against a fixed set of findings with chrome.* stubbed, so
+    the popup layout can be checked (and screenshotted for the report) without
+    loading the extension and finding a live page that triggers every rule.
+
+    Serve the project root over HTTP, since ES modules will not load from
+    file:// — python3 -m http.server 8000 — then open
+    http://localhost:8000/popup/preview.html
+  -->
+  <header class="topbar">
+    <span class="mark" aria-hidden="true">🌙</span>
+    <h1>NightWatch</h1>
+    <span id="tally" class="tally" hidden></span>
+  </header>
+  <p id="status" class="status" role="status">Checking this page…</p>
+  <div id="results" class="results"></div>
+  <footer id="context" class="context"></footer>
+
+  <script>
+    // Measured from tests/fixtures/mock-popups.html and mock-checkout.html.
+    const record = {
+      url: "https://www.aliexpress.com/item/1005011592568391.html?sourceType=562&pvid=8d3931de",
+      scannedAt: Date.now(),
+      findings: [
+        { id: "biased-buttons", category: "Interface Interference", layer: "structure",
+          approach: "Biased Buttons", mechanism: "Visual misdirection / false hierarchy",
+          severity: "medium", source: null, matchCount: 1,
+          explanation: "The answer the site wants is big and bright, while the option to say no is smaller, greyer or harder to spot. Both answers are equally valid — the styling is nudging you toward one of them.",
+          evidence: ["“Allow” is a bright, coloured button, while “Don't allow” is grey."] },
+        { id: "scarcity-low-stock", category: "Interface Interference", layer: "text",
+          approach: "Scarcity Claim (Low Stock)", mechanism: "Scarcity / loss aversion",
+          severity: "high", source: null, matchCount: 2,
+          explanation: "The page says stock is nearly gone. NightWatch cannot check whether the number is real, and many shops show a low count regardless — so treat it as pressure to hurry, not as fact.",
+          evidence: ["Only 1 left in stock!", "ALMOST SOLD OUT"] },
+        { id: "preticked-addon", category: "Sneaking", layer: "structure",
+          approach: "Pre-ticked Add-on", mechanism: "Sneaking / pre-selection",
+          severity: "high", source: null, matchCount: 1,
+          explanation: "An optional extra was already ticked for you. If you leave it, it will probably be added to your order and your total — untick it if you don't want it.",
+          evidence: ["Already ticked: “Add Shipping Protection for $2.99”"] },
+        { id: "unprompted-popup", category: "Nagging", layer: "structure",
+          approach: "Pop-up Interruption", mechanism: "Repeated interruption",
+          severity: "medium", source: null, matchCount: 2,
+          explanation: "A pop-up opened on its own — you didn't click anything to bring it up. Interrupting you mid-browse grabs your attention at a moment you're not ready to think it over. It's fine to close it and carry on.",
+          evidence: [
+            "“AliExpress Subscribe to notifications Get order updates, ti…” opened by itself.",
+            "“Bundle deals US $0.33 on 1 item Free shipping Shop now” opened by itself and dimmed the page behind it.",
+          ] },
+        { id: "nagging-notifications", category: "Nagging", layer: "text",
+          approach: "Notification Nagging", mechanism: "Repeated interruption",
+          severity: "medium", source: null, matchCount: 1,
+          explanation: "The page wants permission to send you notifications, which lets it interrupt you again later even after you have left the site.",
+          evidence: ["Subscribe to notifications"] },
+      ],
+    };
+    window.chrome = {
+      tabs: { query: async () => [{ url: record.url }] },
+      runtime: { sendMessage: async () => ({ ok: true, record }) },
+      storage: { onChanged: { addListener() {} } },
+    };
+  </script>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

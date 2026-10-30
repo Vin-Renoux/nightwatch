@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Course Catalogue — NightWatch test fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; max-width: 720px; }
+    nav a { margin-right: 16px; }
+  </style>
+</head>
+<body>
+  <!--
+    Reproduces docs/Screenshot_20260823_174516.png — LinkedIn Learning's search
+    page was flagged for Popularity Badges because of the heading "Browse most
+    popular courses". That phrase is a section label on a course catalogue, not
+    a badge on something for sale, so the rule is gated behind requiresCommerce.
+
+    Expected detections: none.
+  -->
+  <nav>
+    <a href="#">Learning</a>
+    <a href="#">Best Match</a>
+    <a href="#">Level</a>
+    <a href="#">Time to complete</a>
+  </nav>
+
+  <h1>Browse most popular courses</h1>
+
+  <article>
+    <h2>Beginning your data science exploration</h2>
+    <p>From: Introduction to Data Science (2023)</p>
+  </article>
+
+  <article>
+    <h2>Better manage the challenges of cybersecurity</h2>
+    <p>From: Emotional Intelligence for Cybersecurity Professionals</p>
+  </article>
+
+  <aside>
+    <h2>Explore Learning for your business, higher education, or government team</h2>
+    <p>Buy for my team</p>
+  </aside>
+
+  <!-- Closed by default so NightWatch cannot read it: expectations written in
+       visible text would match the very rules they describe. -->
+  <details class="expected">
+    <summary>What NightWatch should find</summary>
+    <p>Expected detections: none. Marketing wording off a storefront is not a dark pattern.</p>
+  </details>
+</body>
+</html>

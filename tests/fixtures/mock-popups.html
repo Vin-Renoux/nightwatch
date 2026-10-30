@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Pop-ups — NightWatch test fixture</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f4f4f4; color: #222; }
+    header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 18px 32px; }
+    .logo { font-size: 26px; font-weight: 700; color: #e62e04; }
+    .grid { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .card { background: #fff; border-radius: 10px; padding: 14px; min-height: 230px; }
+    .card .img { height: 150px; background: #e6e6e6; border-radius: 8px; margin-bottom: 10px; }
+    .price { font-weight: 700; margin-top: 6px; }
+
+    /* docs/Screenshot_20260915_190443.png — AliExpress's own notification prompt. */
+    #notify { display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000;
+      width: 470px; box-sizing: border-box; padding: 22px 24px; gap: 24px; align-items: center;
+      background: #fff; border-radius: 12px; box-shadow: 0 6px 28px rgba(0, 0, 0, 0.18); }
+    #notify.open { display: flex; }
+    #notify .brand { font-size: 22px; color: #ff4747; font-weight: 600; }
+    #notify h2 { margin: 0 0 4px; font-size: 16px; }
+    #notify p { margin: 0 0 14px; font-size: 13px; color: #555; }
+    #notify .choice { display: flex; gap: 10px; }
+    #notify .choice div { width: 120px; height: 36px; border-radius: 18px; display: grid; place-items: center;
+      font-weight: 600; font-size: 14px; cursor: pointer; }
+    #notify .allow { background: #fd384f; color: #fff; }
+    #notify .deny { background: #f2f2f2; color: #333; }
+
+    /* docs/Screenshot_20260915_190529.png — the "Bundle deals" interstitial. */
+    #mask { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0, 0, 0, 0.45); }
+    #bundle { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2001;
+      width: 420px; padding: 36px 28px; box-sizing: border-box; text-align: center;
+      background: #fff6d8; border-radius: 22px; }
+    #mask.open, #bundle.open { display: block; }
+    #bundle h2 { margin: 0; font-size: 30px; color: #1f7a3b; }
+    #bundle .deal { font-size: 44px; font-weight: 800; color: #3c9a4a; line-height: 1.1; margin: 12px 0; }
+    #bundle .shop { display: block; margin: 20px auto 0; width: 300px; height: 56px; border: 0; border-radius: 28px;
+      background: linear-gradient(rgb(255, 64, 96), rgb(255, 32, 80)); color: #fff; font-size: 24px; font-weight: 700; }
+    #bundle .close { position: absolute; top: -18px; right: -18px; width: 40px; height: 40px; border: 0;
+      border-radius: 50%; background: rgba(120, 120, 120, 0.9); }
+  </style>
+</head>
+<body>
+  <!--
+    Reproduces the pop-ups in docs/Screenshot_20260915_190443.png and
+    docs/Screenshot_20260915_190529.png. Both are already in the page, hidden,
+    and shown by adding a class — the way most shops do it — so this also
+    checks that NightWatch notices attribute changes, not just new elements.
+
+    Expected (Layer 2): Pop-up Interruption ×2, Biased Buttons ("Allow" vs "Don't allow").
+    Expected (Layer 1): Notification Nagging ("Subscribe to notifications").
+  -->
+  <header><span class="logo">AliExpress</span><span>Cart</span></header>
+
+  <main class="grid">
+    <div class="card"><div class="img"></div>Wireless Gaming Mouse<div class="price">AU$26.88</div></div>
+    <div class="card"><div class="img"></div>Mechanical Keyboard 75%<div class="price">AU$48.20</div></div>
+    <div class="card"><div class="img"></div>USB-C Audio Adapter<div class="price">AU$3.67</div></div>
+    <div class="card"><div class="img"></div>DRAM Heatsink<div class="price">AU$9.78</div></div>
+    <div class="card"><div class="img"></div>Braided Earphone Cable<div class="price">AU$10.67</div></div>
+    <div class="card"><div class="img"></div>Controller Case<div class="price">AU$12.40</div></div>
+    <div class="card"><div class="img"></div>Desk Lamp<div class="price">AU$15.10</div></div>
+    <div class="card"><div class="img"></div>Phone Ring Holder<div class="price">AU$5.27</div></div>
+  </main>
+
+  <div id="notify">
+    <span class="brand">AliExpress</span>
+    <div>
+      <h2>Subscribe to notifications</h2>
+      <p>Get order updates, tips about the latest discounts, coupons and more!</p>
+      <div class="choice">
+        <div class="allow">Allow</div>
+        <div class="deny">Don’t allow</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mask"></div>
+  <div id="bundle">
+    <h2>Bundle deals</h2>
+    <div class="deal">US $0.33<br />on 1 item</div>
+    <div>Free shipping</div>
+    <button class="shop">Shop now</button>
+    <button class="close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 2l12 12M14 2L2 14" stroke="#fff" stroke-width="2" /></svg></button>
+  </div>
+
+  <script>
+    setTimeout(() => document.getElementById("notify").classList.add("open"), 1500);
+    setTimeout(() => {
+      document.getElementById("mask").classList.add("open");
+      document.getElementById("bundle").classList.add("open");
+    }, 3000);
+  </script>
+</body>
+</html>

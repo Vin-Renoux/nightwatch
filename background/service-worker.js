@@ -1,21 +1,26 @@
 /**
  * NightWatch service worker — classification and state.
  *
- * Content scripts send page text here; this runs the Layer 1 rules over it,
- * accumulates the result for that page in chrome.storage.local, and answers
- * the popup. Nothing leaves the browser (brief §11).
+ * Content scripts send page text and layout measurements here; this runs the
+ * Layer 1 (wording) and Layer 2 (structure) rules over them, accumulates the
+ * result for that page in chrome.storage.local, and answers the popup.
+ * Nothing leaves the browser (brief §11).
  */
 
-import { classifySegments, compileRules, mergeFindings } from "../lib/classifier.js";
+import { classifySegments, compileRules, foldScan } from "../lib/classifier.js";
 import { PAGE_KEY_PREFIX, isScannable, storageKeyFor } from "../lib/scope.js";
 import { createSerialQueue } from "../lib/serial-queue.js";
+import { classifyStructure, compileStructuralRules } from "../lib/structural.js";
 
 console.log("[NightWatch] service worker started");
 
-const RULES_PATH = "rules/keyword-rules.json";
+const TEXT_RULES_PATH = "rules/keyword-rules.json";
+const STRUCTURE_RULES_PATH = "rules/structural-rules.json";
 const MAX_STORED_PAGES = 100;
 
-let rulesPromise = null;
+const compiledRules = new Map();
+const textRules = () => loadRules(TEXT_RULES_PATH, compileRules);
+const structureRules = () => loadRules(STRUCTURE_RULES_PATH, compileStructuralRules);
 
 // One page at a time: see lib/serial-queue.js for what went wrong without it.
 const pageQueue = createSerialQueue();
@@ -37,6 +42,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // keep the message channel open for the async reply
   }
 
+  if (message?.type === "NW_GET_STRUCTURE_CONFIG") {
+    // Content scripts cannot fetch extension files without exposing them to
+    // every website, so they ask for the "no" wording they need instead.
+    structureRules()
+      .then((rules) => sendResponse({ ok: true, declinePatterns: rules.declineSources }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
   if (message?.type === "NW_GET_RESULTS") {
     readPageRecord(message.url)
       .then((record) => sendResponse({ ok: true, record }))
@@ -47,21 +61,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-/** Load and compile the Layer 1 rules once per service-worker lifetime. */
-function loadRules() {
-  if (!rulesPromise) {
-    rulesPromise = fetch(chrome.runtime.getURL(RULES_PATH))
+/** Load and compile a rules file once per service-worker lifetime. */
+function loadRules(path, compile) {
+  if (!compiledRules.has(path)) {
+    const loading = fetch(chrome.runtime.getURL(path))
       .then((response) => {
-        if (!response.ok) throw new Error(`rules request failed: HTTP ${response.status}`);
+        if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
         return response.json();
       })
-      .then(compileRules)
+      .then(compile)
       .catch((error) => {
-        rulesPromise = null; // let the next message retry rather than caching a failure
+        compiledRules.delete(path); // let the next message retry rather than caching a failure
         throw error;
       });
+    compiledRules.set(path, loading);
   }
-  return rulesPromise;
+  return compiledRules.get(path);
 }
 
 async function handlePageSignals(message, sender) {
@@ -70,33 +85,36 @@ async function handlePageSignals(message, sender) {
   const key = storageKeyFor(message.url);
   if (!key) return { ok: true, skipped: true };
 
-  const rules = await loadRules();
-  const findings = classifySegments(message.segments, rules);
+  const [text, structure] = await Promise.all([textRules(), structureRules()]);
+  const wording = classifySegments(message.segments, text);
+  const layout = classifyStructure(message.structure, structure);
   const tabId = sender.tab?.id;
 
   // Read, merge, write and badge as one unit. Interleaving these with another
   // scan of the same page is what left the badge and the popup disagreeing.
-  const merged = await pageQueue(key, async () => {
+  const findings = await pageQueue(key, async () => {
     // Merge rather than replace: a rescan can catch the page mid-rebuild with
     // less text than before, and replacing would wipe real detections.
     const previous = await readRecord(key);
-    const accumulated = mergeFindings(previous?.findings, findings);
+    const folded = foldScan(previous, [...wording, ...layout.findings], layout.supersedes);
 
     await writeRecord(key, {
       url: message.url,
       title: message.title ?? "",
       scannedAt: Date.now(),
-      findings: accumulated,
+      findings: folded.findings,
+      superseded: folded.superseded,
     });
 
-    if (typeof tabId === "number") await updateBadge(tabId, accumulated.length);
-    return accumulated;
+    if (typeof tabId === "number") await updateBadge(tabId, folded.findings.length);
+    return folded.findings;
   });
 
   console.log(
-    `[NightWatch] ${findings.length} this pass, ${merged.length} total on ${message.url} (${message.reason})`,
+    `[NightWatch] ${wording.length} wording + ${layout.findings.length} layout this pass, ` +
+      `${findings.length} total on ${message.url} (${message.reason})`,
   );
-  return { ok: true, count: merged.length };
+  return { ok: true, count: findings.length };
 }
 
 async function readPageRecord(url) {

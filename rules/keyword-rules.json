@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "taxonomy": "Gray et al. (2024) five high-level strategies",
   "notes": [
     "Layer 1 (text) rules only. Each rule maps to exactly one of the five high-level strategies so the popup can group results consistently (brief 6.3).",
@@ -199,7 +199,8 @@
       "severity": "high",
       "explanation": "A trial or subscription will start charging you automatically unless you cancel first. Note the date it converts, and check how hard cancelling is before you sign up.",
       "patterns": [
-        "\\bfree trial\\b",
+        "\\bfree\\b[^.!?]{0,25}\\btrial\\b",
+        "\\b\\d+[- ]day (free )?trial\\b",
         "\\bauto[- ]?renew(s|al|ing)?\\b",
         "\\brenews automatically\\b",
         "\\byou will be (charged|billed) (after|when|unless)",
@@ -324,6 +325,7 @@
       "explanation": "The page wants permission to send you notifications, which lets it interrupt you again later even after you have left the site.",
       "patterns": [
         "\\b(allow|enable|turn on) (browser |web |push )?notifications\\b",
+        "\\bsubscribe to (our |push |browser |web )?notifications\\b",
         "\\bnever miss (a|an) (deal|offer|update|drop|sale)",
         "\\bget notified (about|when|as soon as)\\b"
       ]

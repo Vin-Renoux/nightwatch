@@ -8,7 +8,7 @@
     header { display: flex; justify-content: flex-end; padding: 12px 24px; background: #111; color: #fff; }
     main { max-width: 360px; margin: 48px auto; text-align: center; }
     input, button { width: 100%; padding: 10px; margin: 6px 0; }
-    footer { max-width: 360px; margin: 24px auto; font-size: 11px; color: #666; text-align: center; }
+    .expected { max-width: 360px; margin: 24px auto; font-size: 11px; color: #666; text-align: center; }
   </style>
 </head>
 <body>
@@ -34,8 +34,11 @@
     <button>Continue with Facebook</button>
   </main>
 
-  <footer>
+  <!-- Closed by default so NightWatch cannot read it: expectations written in
+       visible text would match the very rules they describe. -->
+  <details class="expected">
+    <summary>What NightWatch should find</summary>
     <p>Expected detections: Login Wall (Forced Action).</p>
-  </footer>
+  </details>
 </body>
 </html>

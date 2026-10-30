@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Checkout — NightWatch test fixture</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f6f6f6; color: #222; }
+    main { max-width: 640px; margin: 32px auto; padding: 24px 28px; background: #fff; border-radius: 12px; }
+    h1 { margin-top: 0; }
+    .line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    label { display: block; margin: 12px 0; }
+
+    /* A custom checkbox: the real input is invisible and a drawn box stands in for it. */
+    .fancy { position: relative; padding-left: 28px; }
+    .fancy input { position: absolute; left: 0; top: 2px; opacity: 0; }
+    .fancy::before { content: ""; position: absolute; left: 0; top: 2px; width: 16px; height: 16px;
+      border-radius: 4px; background: #16a34a; }
+
+    .switch { display: flex; align-items: center; gap: 10px; margin: 12px 0; cursor: pointer; }
+    .switch .track { width: 34px; height: 18px; border-radius: 9px; background: #16a34a; }
+
+    .upsell { margin-top: 24px; padding: 20px; border-radius: 12px; background: #f0fdf4; text-align: center; }
+    .upsell .add { display: block; margin: 12px auto 8px; width: 280px; height: 48px; border: 0; border-radius: 8px;
+      background: #16a34a; color: #fff; font-size: 16px; font-weight: 600; }
+    .upsell .skip { font-size: 11px; color: #bbb; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <!--
+    A checkout with boxes ticked before the shopper arrives, and an upsell
+    whose "no" is a tiny, faint link.
+
+    Expected (Layer 2):
+      Pre-ticked Add-on   — "Add Shipping Protection for $2.99", "Add a 2-year warranty for $19.99"
+      Pre-ticked Opt-in   — "Email me about new arrivals…", "Share my details with trusted partners…"
+      Biased Buttons      — "Add protection" vs "No thanks"
+    Not expected: the billing-address box (convenience) or gift wrap (not ticked).
+  -->
+  <main>
+    <h1>Checkout</h1>
+    <div class="line"><span>Merino Crew Jumper</span><span>$89.00</span></div>
+    <div class="line"><span>Shipping</span><span>$9.95</span></div>
+
+    <form>
+      <label><input type="checkbox" name="protection" checked /> Add Shipping Protection for $2.99</label>
+      <label class="fancy"><input type="checkbox" name="warranty" checked /> Add a 2-year warranty for $19.99</label>
+      <label><input type="checkbox" name="gift" /> Gift wrap this order (+$4.00)</label>
+      <label><input type="checkbox" name="billing" checked /> My billing address is the same as my shipping address</label>
+      <label><input type="checkbox" name="news" checked /> Email me about new arrivals and special offers</label>
+      <div class="switch" role="switch" aria-checked="true" tabindex="0">
+        <span class="track"></span><span>Share my details with trusted partners for personalised offers</span>
+      </div>
+    </form>
+
+    <section class="upsell">
+      <strong>Protect your purchase</strong>
+      <p>Accidental damage cover for 2 years.</p>
+      <div>
+        <button type="button" class="add">Add protection</button>
+        <a href="#" class="skip">No thanks</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

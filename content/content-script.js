@@ -1,13 +1,16 @@
 /**
- * NightWatch content script — Layer 1 signal extraction.
+ * NightWatch content script — page-side signal extraction.
  *
- * Its only job is to pull visible text out of the page and hand it to the
- * service worker, which does the classifying (brief §3). Keeping the page-side
+ * Collects what the service worker needs to judge the page (brief §3):
+ *   - Layer 1: the visible text, split into segments;
+ *   - Layer 2: measurements of pop-ups, buttons and ticked boxes, taken by
+ *     content/structure.js, which the manifest loads just before this file.
+ * All classification happens in the service worker. Keeping the page-side
  * work this small matters for the low-resource-device goal in §11.
  */
 
 // Keep in sync with SEARCH_HOST_PATTERNS in lib/scope.js — content scripts
-// cannot import ES modules, and tests/classifier.test.js checks the two match.
+// cannot import ES modules, and tests/scope.test.js checks the two match.
 const SEARCH_HOST_PATTERNS = [
   /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/,
   /(^|\.)bing\.com$/,
@@ -33,9 +36,33 @@ const SKIP_TAGS = new Set([
 const MIN_SEGMENT_CHARS = 3;
 const MAX_SEGMENT_CHARS = 400;
 const MAX_SEGMENTS = 1500;
+
+// Rescans after the page changes: quick at first, then backing off, so a tab
+// left open on a ticking countdown costs little.
 const RESCAN_DEBOUNCE_MS = 800;
 const RESCAN_MAX_WAIT_MS = 4000;
-const MAX_RESCANS = 40;
+const SLOW_RESCAN_DEBOUNCE_MS = 3000;
+const SLOW_RESCAN_MAX_WAIT_MS = 12000;
+const FAST_RESCANS = 20;
+const MAX_RESCANS = 60;
+// A click often opens a checkout step or a panel without changing the URL, so
+// it buys a few more looks even after the budget is spent.
+const RESCANS_PER_INTERACTION = 5;
+// A newly seen pop-up is judged on a second look this long after the first.
+const CONFIRM_DELAY_MS = 1200;
+const MAX_CONFIRMS = 15;
+
+// Pop-ups are usually already in the page, hidden, and shown by flipping one
+// of these — which a childList-only observer never sees.
+const WATCHED_ATTRIBUTES = [
+  "class",
+  "style",
+  "hidden",
+  "open",
+  "aria-hidden",
+  "aria-modal",
+  "aria-checked",
+];
 
 if (SEARCH_HOST_PATTERNS.some((pattern) => pattern.test(location.hostname))) {
   console.log("[NightWatch] search results page — not scanning:", location.href);
@@ -48,11 +75,17 @@ function start() {
 
   let lastUrl = location.href;
   let rescans = 0;
+  let confirmsLeft = MAX_CONFIRMS;
   let debounceTimer = null;
   let maxWaitTimer = null;
+  let confirmTimer = null;
+  let watching = false;
+  let previousScanAt = 0; // performance.now() of the last look; 0 is navigation start
+  let changedSince = null; // when the page first changed after the last look
+  let configPromise = requestStructureConfig();
 
-  // Shops render prices, banners and cart nudges after first paint, so one scan
-  // at load is not enough — watch for changes.
+  // If structure.js failed to load, keep the text checks running without it.
+  const collector = globalThis.NightWatchStructure?.create({ onInteraction: extendBudget }) ?? null;
   const observer = new MutationObserver(onMutation);
 
   if (document.readyState === "loading") {
@@ -67,6 +100,7 @@ function start() {
 
   function onMutation() {
     if (checkForNavigation()) return;
+    if (changedSince === null) changedSince = performance.now();
     scheduleRescan();
   }
 
@@ -74,6 +108,7 @@ function start() {
     if (location.href === lastUrl) return false;
     lastUrl = location.href;
     rescans = 0; // new page, fresh budget
+    confirmsLeft = MAX_CONFIRMS;
     clearTimers();
     observe();
     scan("navigation");
@@ -82,11 +117,14 @@ function start() {
 
   function scheduleRescan() {
     if (rescans >= MAX_RESCANS) return;
+    const slow = rescans >= FAST_RESCANS;
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(runRescan, RESCAN_DEBOUNCE_MS);
+    debounceTimer = setTimeout(runRescan, slow ? SLOW_RESCAN_DEBOUNCE_MS : RESCAN_DEBOUNCE_MS);
     // A live countdown mutates every second, which would reset the debounce
     // forever and mean the page is never rescanned. Force one through.
-    if (maxWaitTimer === null) maxWaitTimer = setTimeout(runRescan, RESCAN_MAX_WAIT_MS);
+    if (maxWaitTimer === null) {
+      maxWaitTimer = setTimeout(runRescan, slow ? SLOW_RESCAN_MAX_WAIT_MS : RESCAN_MAX_WAIT_MS);
+    }
   }
 
   function runRescan() {
@@ -94,9 +132,24 @@ function start() {
     rescans += 1;
     scan("mutation");
     if (rescans >= MAX_RESCANS) {
-      observer.disconnect();
-      console.log("[NightWatch] rescan budget reached, watching stopped");
+      stopWatching();
+      console.log("[NightWatch] rescan budget reached, watching paused until the next click");
     }
+  }
+
+  function extendBudget() {
+    if (rescans < MAX_RESCANS) return;
+    rescans = MAX_RESCANS - RESCANS_PER_INTERACTION;
+    observe();
+  }
+
+  function scheduleConfirm() {
+    if (confirmTimer !== null || confirmsLeft <= 0) return;
+    confirmsLeft -= 1;
+    confirmTimer = setTimeout(() => {
+      confirmTimer = null;
+      scan("confirm");
+    }, CONFIRM_DELAY_MS);
   }
 
   function clearTimers() {
@@ -107,16 +160,40 @@ function start() {
   }
 
   function observe() {
+    if (watching) return;
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
       characterData: true,
+      attributes: true,
+      attributeFilter: WATCHED_ATTRIBUTES,
     });
+    watching = true;
   }
 
-  function scan(reason) {
+  function stopWatching() {
+    observer.disconnect();
+    watching = false;
+  }
+
+  async function scan(reason) {
+    // Anything new on screen appeared after the page first changed since the
+    // last look — which is what tells a pop-up the shopper clicked open from
+    // one that opened by itself.
+    const since = changedSince ?? previousScanAt;
+    changedSince = null;
+    previousScanAt = performance.now();
+
     const segments = extractVisibleText();
-    if (segments.length === 0) return;
+    let structure = null;
+    if (collector) {
+      const config = await configPromise;
+      if (config.retry) configPromise = requestStructureConfig();
+      const result = collector.collect({ declinePattern: config.declinePattern, changedSince: since });
+      structure = result.structure;
+      if (result.pendingConfirm) scheduleConfirm();
+    }
+    if (segments.length === 0 && !hasStructure(structure)) return;
 
     chrome.runtime
       .sendMessage({
@@ -125,11 +202,32 @@ function start() {
         url: location.href,
         title: document.title,
         segments,
+        structure,
       })
       .catch(() => {
         // Service worker asleep or page unloading — the next scan will retry.
       });
   }
+}
+
+/** The "no" wording from rules/structural-rules.json, as one pattern. */
+function requestStructureConfig() {
+  return chrome.runtime
+    .sendMessage({ type: "NW_GET_STRUCTURE_CONFIG" })
+    .then((reply) => {
+      const sources = reply?.declinePatterns ?? [];
+      if (!sources.length) throw new Error("no decline wording");
+      // One combined pattern, so each link on a big page costs one test, not twenty.
+      return { declinePattern: new RegExp(sources.map((source) => `(?:${source})`).join("|"), "i") };
+    })
+    .catch(() => ({ declinePattern: null, retry: true }));
+}
+
+function hasStructure(structure) {
+  return Boolean(
+    structure &&
+      (structure.overlays.length || structure.groups.length || structure.checkboxes.length),
+  );
 }
 
 /** Every distinct piece of visible text on the page, as separate segments. */
@@ -147,7 +245,11 @@ function extractVisibleText() {
     const parent = node.parentElement;
     if (!parent || SKIP_TAGS.has(parent.tagName)) continue;
 
-    const text = node.nodeValue.replace(/\s+/g, " ").trim();
+    // Straighten curly apostrophes so "Don’t" matches the same rules as "Don't".
+    const text = node.nodeValue
+      .replace(/[‘’]/g, "'")
+      .replace(/\s+/g, " ")
+      .trim();
     if (text.length < MIN_SEGMENT_CHARS || seen.has(text)) continue;
     if (!isVisible(parent)) continue;
 

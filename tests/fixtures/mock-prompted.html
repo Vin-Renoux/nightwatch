@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Product Page With Ordinary Pop-ups — NightWatch test fixture</title>
+  <style>
+    body { margin: 0; padding-top: 64px; font-family: system-ui, sans-serif; color: #222; }
+    header { position: fixed; top: 0; left: 0; right: 0; height: 64px; z-index: 50; display: flex; align-items: center;
+      gap: 24px; padding: 0 32px; background: #fff; box-shadow: 0 1px 0 #e5e5e5; box-sizing: border-box; }
+    header .logo { font-weight: 700; font-size: 20px; margin-right: auto; }
+    header .signin { background: #111; color: #fff; border: 0; border-radius: 6px; padding: 8px 16px; }
+    main { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+    .photo { height: 360px; background: #ececec; border-radius: 12px; margin-bottom: 20px; }
+    p { line-height: 1.6; }
+    .size-guide { border: 1px solid #222; background: #fff; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+    label { display: block; margin: 12px 0; }
+
+    #chat { position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%; border: 0;
+      background: #2563eb; z-index: 60; }
+
+    #mask { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.5); }
+    #guide { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 101;
+      width: 520px; padding: 28px; background: #fff; border-radius: 14px; }
+    #mask.open, #guide.open { display: block; }
+    #guide table { width: 100%; border-collapse: collapse; }
+    #guide td, #guide th { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <!--
+    Everything here is ordinary and none of it should be reported:
+      - a fixed header bar;
+      - a chat bubble in the corner;
+      - a size guide that opens only when the shopper clicks for it;
+      - a newsletter box the shopper ticks themselves;
+      - a "Remember me" box that is ticked by default, which is convenience, not a trick.
+    The end-to-end run clicks "Size guide" and the newsletter box like a shopper would.
+
+    Expected detections: none.
+
+    With ?auto=1 the site does the same two things by itself — opens the size
+    guide and ticks the newsletter box — and both must then be reported. The
+    pair proves it is *who acted* that NightWatch is judging.
+  -->
+  <header>
+    <span class="logo">Northwind Outfitters</span>
+    <span>Men</span><span>Women</span><span>Kids</span>
+    <button class="signin">Sign in</button>
+  </header>
+
+  <main>
+    <div class="photo"></div>
+    <h1>Merino Crew Jumper</h1>
+    <p>A midweight merino jumper for cool mornings. Machine washable on a wool cycle.</p>
+    <p>Colour: charcoal. Sizes S to XL.</p>
+    <button id="size-guide" class="size-guide">Size guide</button>
+
+    <form>
+      <label id="newsletter-label"><input type="checkbox" name="newsletter" /> Email me exclusive deals and offers</label>
+      <label><input type="checkbox" name="remember" checked /> Remember me</label>
+    </form>
+
+    <p>Care: wash cold, dry flat, store folded. Pilling is normal for natural fibres and can be removed with a comb.</p>
+    <p>Made from responsibly sourced wool. Ships from Melbourne within two business days.</p>
+  </main>
+
+  <button id="chat" aria-label="Chat with us"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z" fill="#fff" /></svg></button>
+
+  <div id="mask"></div>
+  <div id="guide" role="dialog" aria-label="Size guide">
+    <h2>Size guide</h2>
+    <table>
+      <tr><th>Size</th><th>Chest (cm)</th><th>Length (cm)</th></tr>
+      <tr><td>S</td><td>96</td><td>68</td></tr>
+      <tr><td>M</td><td>102</td><td>70</td></tr>
+      <tr><td>L</td><td>108</td><td>72</td></tr>
+    </table>
+  </div>
+
+  <script>
+    const openGuide = () => {
+      document.getElementById("mask").classList.add("open");
+      document.getElementById("guide").classList.add("open");
+    };
+    document.getElementById("size-guide").addEventListener("click", openGuide);
+
+    if (new URLSearchParams(location.search).get("auto") === "1") {
+      setTimeout(openGuide, 1500);
+      // Set the property, not the attribute: the box is ticked with no user event at all.
+      setTimeout(() => (document.querySelector('input[name="newsletter"]').checked = true), 1500);
+    }
+  </script>
+</body>
+</html>

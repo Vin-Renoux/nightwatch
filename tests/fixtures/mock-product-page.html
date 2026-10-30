@@ -9,7 +9,7 @@
     .scarcity { color: #c0392b; font-weight: 600; }
     .watching { background: #f5a623; padding: 2px 6px; }
     .hidden-note { display: none; }
-    footer { margin-top: 32px; font-size: 12px; color: #666; }
+    .expected { margin-top: 32px; font-size: 12px; color: #666; }
   </style>
 </head>
 <body>
@@ -56,11 +56,14 @@
 
   <!--
     Hidden text, and the only place Notification Nagging appears. If the
-    visibility filter in the content script breaks, this adds a 15th detection.
+    visibility filter in the content script breaks, this adds a 14th detection.
   -->
   <p class="hidden-note">Allow browser notifications so you never miss a deal</p>
 
-  <footer>
+  <!-- Closed by default so NightWatch cannot read it: expectations written in
+       visible text would match the very rules they describe. -->
+  <details class="expected">
+    <summary>What NightWatch should find</summary>
     <p>
       Expected detections (13): Scarcity Claim (Low Stock), Urgency Pressure (Deadline),
       Social Proof Pressure, Popularity Badges, Price Anchoring, Confirmshaming,
@@ -71,6 +74,6 @@
       Expected NOT detected: Notification Nagging (hidden), Login Wall (needs two
       distinct patterns), and the anti-scam line above (negated).
     </p>
-  </footer>
+  </details>
 </body>
 </html>

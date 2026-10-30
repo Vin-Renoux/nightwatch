@@ -1,0 +1,174 @@
+{
+  "version": "0.1.0",
+  "notes": [
+    "Layer 2 (structure) rules. content/structure.js measures the page — what is floating over it, how its buttons are styled, which boxes are ticked — and lib/structural.js judges those measurements against the vocabulary and thresholds below.",
+    "Like Layer 1, every rule maps to one of the five Gray et al. (2024) strategies so the popup can group results consistently.",
+    "A pop-up only counts as an interruption if it opened without a click or key press just before it. Something the shopper opened themselves is not nagging.",
+    "Cookie and consent banners are never reported as interruptions — they are legally required — but their buttons are still measured for bias. Once a consent choice has been measured, the Layer 1 rules listed in 'settles' are dropped for that page: the measurement replaces the wording-based guess, whichever way it comes out.",
+    "Button prominence uses WCAG 2 contrast ratios, so faintContrast 3.0 is the same line accessibility guidance draws for large text.",
+    "Vocabulary entries are case-insensitive regular expressions, matched against button labels, checkbox labels or pop-up text after curly apostrophes are straightened."
+  ],
+  "thresholds": {
+    "barMinWidth": 0.9,
+    "barMaxHeight": 0.25,
+    "smallMaxCoverage": 0.12,
+    "dialogMinCoverage": 0.25,
+    "minContentChars": 8,
+    "visibleFillContrast": 1.05,
+    "strongFillChroma": 0.25,
+    "strongFillContrast": 3.0,
+    "outlineContrast": 1.5,
+    "sizeRatio": 0.5,
+    "fontRatio": 0.8,
+    "faintContrast": 3.0,
+    "biasThreshold": 1.5
+  },
+  "vocabulary": {
+    "decline": [
+      "^no$",
+      "\\bno,? thanks?\\b",
+      "\\bno,? thank you\\b",
+      "\\bnot now\\b",
+      "\\bnot interested\\b",
+      "\\b(maybe|remind me|ask me) later\\b",
+      "\\bskip\\b(?!\\s+to\\s+(the\\s+)?(main\\s+)?(content|navigation|search))",
+      "\\bcontinue without\\b",
+      "\\b(don'?t|do not|never) allow\\b",
+      "\\bblock\\b",
+      "\\bdeny\\b",
+      "\\bdecline\\b",
+      "\\breject\\b",
+      "\\brefuse\\b",
+      "\\bi (don'?t|do not) (want|need|like)\\b",
+      "\\bi'?ll pass\\b",
+      "\\bno,? i\\b",
+      "\\bdisagree\\b",
+      "\\bopt[- ]?out\\b",
+      "\\bdismiss\\b",
+      "\\b(only|just) (the )?(necessary|essential|required)\\b",
+      "\\b(necessary|essential|required) (cookies )?only\\b",
+      "\\bunsubscribe\\b"
+    ],
+    "consentAlternative": [
+      "\\b(manage|customi[sz]e|adjust|change|review|set)\\b.{0,20}\\b(settings|preferences|options|choices|cookies|consent)\\b",
+      "^(cookie |privacy )?(settings|preferences|options)$",
+      "\\bmore options\\b",
+      "^customi[sz]e$"
+    ],
+    "accept": [
+      "\\ballow\\b",
+      "\\baccept\\b",
+      "\\bagree\\b",
+      "^(yes|ok|okay|sure)\\b",
+      "\\bgot it\\b",
+      "\\bcontinue\\b",
+      "\\bsubscribe\\b",
+      "\\bsign ?(me )?up\\b",
+      "\\bjoin\\b",
+      "\\bclaim\\b",
+      "\\bget\\b",
+      "\\bshop\\b",
+      "\\bbuy\\b",
+      "\\b(start|begin)\\b",
+      "\\b(try|trial|free)\\b",
+      "\\b(enable|turn on|activate)\\b",
+      "\\bupgrade\\b",
+      "\\b(install|download)\\b",
+      "\\bopen (the |in )?app\\b",
+      "\\bregister\\b",
+      "\\bnotify me\\b",
+      "\\b(count me in|i'?m in)\\b",
+      "\\b(save|add|unlock|redeem|apply)\\b"
+    ],
+    "exit": [
+      "^[×✕✖✗╳xX]$",
+      "^close\\b",
+      "\\bclose (this |the )?(dialog|pop-?up|window|banner|modal|ad|overlay|message)\\b",
+      "^cancel$",
+      "^(go )?back$"
+    ],
+    "consentContext": [
+      "\\bcookies?\\b",
+      "\\btracking technolog",
+      "\\bsimilar technologies\\b",
+      "\\b(your )?privacy (choices|preferences|settings)\\b",
+      "\\bgdpr\\b",
+      "\\bconsent (manager|preferences|settings|choices)\\b"
+    ],
+    "functionalContext": [
+      "\\b(select|choose|change|confirm|set|update) (your )?(country|region|language|location|currency|store|site|delivery location|shipping destination)\\b",
+      "\\b(are you|you must be|confirm (you are|you're)|i am) (over |at least |aged )?(18|19|21)\\b",
+      "\\b(verify|confirm) your age\\b",
+      "\\bage verification\\b",
+      "\\b(date of birth|enter your birthday)\\b",
+      "\\bsession (has )?(expired|timed out)\\b",
+      "\\byou('ve| have) been (signed|logged) out\\b",
+      "\\b(language|country|region) (and|&) (currency|region|language)\\b"
+    ],
+    "optInBenign": [
+      "\\b(remember me|keep me (signed|logged) in|stay (signed|logged) in)\\b",
+      "\\bsame as\\b",
+      "\\b(billing|shipping|delivery) address\\b",
+      "\\b(show|hide) password\\b",
+      "\\bnot a robot\\b"
+    ],
+    "optInAddOn": [
+      "\\b(insurance|warranty|protect my|protection plan|(shipping|purchase|package|delivery|order|price) protection)\\b",
+      "\\b(donat(e|ion)|round (it |my order )?up)\\b",
+      "\\bgift ?wrap",
+      "\\b(priority|express|expedited) (shipping|delivery|handling|processing)\\b",
+      "\\b(membership|subscribe (&|and) save|auto[- ]?renew|automatically renew)\\b",
+      "\\b(add|include)\\b.{0,50}(\\$|£|€)\\s?\\d",
+      "\\bcarbon (offset|neutral)\\b",
+      "\\b(add|leave) a tip\\b"
+    ],
+    "optInConsent": [
+      "\\b(send|email|text|notify|contact|message) me\\b",
+      "\\bkeep me (updated|informed|posted|in the loop)\\b",
+      "\\b(receive|get|hear about)\\b.{0,40}\\b(offers?|deals?|promotions?|news(letters?)?|updates|marketing|emails?|sms|texts?)\\b",
+      "\\bnewsletters?\\b",
+      "\\b(marketing|promotional)\\b",
+      "\\bsubscribe\\b",
+      "\\bsign me up\\b",
+      "\\bopt[- ]?in\\b",
+      "\\b(third[- ]part(y|ies)|partners?)\\b",
+      "\\bshare my (data|information|details|email|contact)\\b",
+      "\\bpersonali[sz]ed (ads|advertising|offers|recommendations)\\b"
+    ]
+  },
+  "rules": [
+    {
+      "id": "unprompted-popup",
+      "category": "Nagging",
+      "approach": "Pop-up Interruption",
+      "mechanism": "Repeated interruption",
+      "severity": "medium",
+      "explanation": "A pop-up opened on its own — you didn't click anything to bring it up. Interrupting you mid-browse grabs your attention at a moment you're not ready to think it over. It's fine to close it and carry on."
+    },
+    {
+      "id": "biased-buttons",
+      "category": "Interface Interference",
+      "approach": "Biased Buttons",
+      "mechanism": "Visual misdirection / false hierarchy",
+      "severity": "medium",
+      "settles": ["biased-cookie-choices"],
+      "explanation": "The answer the site wants is big and bright, while the option to say no is smaller, greyer or harder to spot. Both answers are equally valid — the styling is nudging you toward one of them."
+    },
+    {
+      "id": "preticked-addon",
+      "category": "Sneaking",
+      "approach": "Pre-ticked Add-on",
+      "mechanism": "Sneaking / pre-selection",
+      "severity": "high",
+      "explanation": "An optional extra was already ticked for you. If you leave it, it will probably be added to your order and your total — untick it if you don't want it."
+    },
+    {
+      "id": "preticked-consent",
+      "category": "Interface Interference",
+      "approach": "Pre-ticked Opt-in",
+      "mechanism": "Default opt-in / pre-selection",
+      "severity": "medium",
+      "explanation": "A box agreeing to marketing or sharing your details was ticked before you got here. Leaving it means you've 'agreed' without actually choosing to — untick it if you don't want this."
+    }
+  ]
+}

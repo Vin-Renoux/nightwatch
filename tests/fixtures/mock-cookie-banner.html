@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock Cookie Banner — NightWatch test fixture</title>
+  <script>
+    // ?style=balanced shows equal Accept and Reject buttons; anything else shows
+    // a big Accept beside a faint "Manage preferences" link.
+    document.documentElement.dataset.style =
+      new URLSearchParams(location.search).get("style") === "balanced" ? "balanced" : "biased";
+  </script>
+  <style>
+    body { margin: 0; font-family: Georgia, serif; color: #222; }
+    article { max-width: 700px; margin: 40px auto 220px; padding: 0 16px; line-height: 1.7; font-size: 18px; }
+    #consent { position: fixed; left: 0; right: 0; bottom: 0; z-index: 500; box-sizing: border-box; height: 150px;
+      padding: 22px 40px; display: flex; gap: 32px; align-items: center;
+      font-family: system-ui, sans-serif; background: #fff; box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12); }
+    #consent p { margin: 0; flex: 1; font-size: 14px; }
+    #consent .buttons { display: flex; gap: 12px; align-items: center; }
+    .primary { border: 0; border-radius: 6px; background: #1a73e8; color: #fff; font-size: 15px; font-weight: 600;
+      width: 160px; height: 44px; }
+    .faint { font-size: 12px; color: #999; text-decoration: none; }
+    [data-style="balanced"] .biased-only,
+    [data-style="biased"] .balanced-only { display: none; }
+    [data-style="biased"] .primary { width: 220px; height: 48px; }
+  </style>
+</head>
+<body>
+  <!--
+    A cookie banner, in two styles. Neither is a pop-up interruption — consent
+    banners are legally required. What differs is the buttons:
+      ?style=balanced  — "Accept all" and "Reject all" look the same: not biased.
+      ?style=biased    — only a faint "Manage preferences" link says no: biased.
+    Either way, measuring the buttons settles Layer 1's wording-based guess
+    ("biased-cookie-choices"), so that finding must not appear.
+  -->
+  <article>
+    <h1>How to look after a wool jumper</h1>
+    <p>Wool is self-cleaning to a surprising degree. Airing a jumper overnight often does more good than a wash.</p>
+    <p>When it does need washing, use cold water and a wool detergent, and never wring it — press the water out
+      between two towels instead.</p>
+    <p>Dry flat, away from direct heat, and fold rather than hang to keep the shoulders in shape.</p>
+    <p>Pilling happens where fibres rub. A wool comb lifts it off in a minute and the jumper will pill less over time.</p>
+    <p>Store folded with cedar in a breathable bag, and your jumper will last for years.</p>
+    <p>Moths prefer dark, undisturbed places and clothes that have been worn but not washed, so put jumpers away
+      clean and take them out now and then over summer.</p>
+    <p>Small holes can be darned with matching yarn. A darning mushroom helps keep the tension even, and a visible
+      contrasting darn has become a style of its own.</p>
+    <p>If a jumper shrinks, soak it in lukewarm water with a little hair conditioner, then gently stretch it back
+      into shape and dry it flat.</p>
+    <p>Above all, wear it often. A well-loved wool jumper softens with age and outlasts almost anything else in
+      the wardrobe.</p>
+  </article>
+
+  <div id="consent" role="region" aria-label="Cookie consent">
+    <p><strong>We value your privacy.</strong> We use cookies and similar technologies to personalise content and
+      ads, and to analyse our traffic.</p>
+    <div class="buttons">
+      <button class="primary balanced-only">Accept all</button>
+      <button class="primary balanced-only">Reject all</button>
+      <button class="primary biased-only">Accept all cookies</button>
+      <a href="#" class="faint">Manage preferences</a>
+    </div>
+  </div>
+</body>
+</html>
