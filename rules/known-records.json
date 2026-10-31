@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "notes": [
     "Documented regulator actions over hard-to-cancel subscriptions — the 'hidden unsubscribe / roach motel' pattern that a single page view cannot show.",
     "Brief §11: no unverified brand-level claims. Only legal actions by a regulator belong here, worded as what was alleged, with the agency, case and date. Never a review site, a forum, or NightWatch's own detections.",
@@ -10,7 +10,13 @@
     {
       "id": "ftc-amazon-prime-2023",
       "company": "Amazon",
-      "domains": ["amazon.com", "amazon.com.au", "amazon.co.uk", "amazon.ca", "amazon.de"],
+      "domains": [
+        "amazon.com",
+        "amazon.com.au",
+        "amazon.co.uk",
+        "amazon.ca",
+        "amazon.de"
+      ],
       "pattern": "Roach Motel (Hard to Cancel)",
       "summary": "In 2023 the US Federal Trade Commission sued Amazon, alleging it signed people up to Prime without clear consent and made cancelling deliberately difficult through a multi-step process. Amazon settled the case in 2025.",
       "source": "US Federal Trade Commission, FTC v. Amazon.com, Inc. (filed June 2023; settled September 2025)"
@@ -18,7 +24,9 @@
     {
       "id": "doj-ftc-adobe-2024",
       "company": "Adobe",
-      "domains": ["adobe.com"],
+      "domains": [
+        "adobe.com"
+      ],
       "pattern": "Roach Motel (Hard to Cancel)",
       "summary": "In 2024 the US Department of Justice, referred by the Federal Trade Commission, sued Adobe, alleging it hid an early termination fee and made subscriptions hard to cancel.",
       "source": "US Department of Justice on behalf of the FTC, United States v. Adobe Inc. (filed June 2024)"
@@ -26,10 +34,74 @@
     {
       "id": "ftc-uber-one-2025",
       "company": "Uber",
-      "domains": ["uber.com"],
+      "domains": [
+        "uber.com"
+      ],
       "pattern": "Roach Motel (Hard to Cancel)",
       "summary": "In 2025 the US Federal Trade Commission sued Uber, alleging it charged people for Uber One without consent and made the subscription hard to cancel.",
       "source": "US Federal Trade Commission, FTC v. Uber Technologies, Inc. (filed April 2025)"
+    },
+    {
+      "id": "ftc-match-2019",
+      "company": "Match Group",
+      "domains": [
+        "match.com"
+      ],
+      "pattern": "Roach Motel (Hard to Cancel)",
+      "summary": "In 2019 the US Federal Trade Commission sued Match Group, alleging among other things that Match.com made cancelling a subscription confusing and cumbersome. The case was settled in 2025.",
+      "source": "US Federal Trade Commission, FTC v. Match Group, Inc. (filed September 2019; settled 2025)"
+    },
+    {
+      "id": "ftc-abcmouse-2020",
+      "company": "Age of Learning (ABCmouse)",
+      "domains": [
+        "abcmouse.com"
+      ],
+      "pattern": "Roach Motel (Hard to Cancel)",
+      "summary": "In 2020 the US Federal Trade Commission alleged that ABCmouse kept charging families after free trials and made it difficult to cancel memberships. The company settled.",
+      "source": "US Federal Trade Commission, FTC v. Age of Learning, Inc. (settled September 2020)"
+    },
+    {
+      "id": "ftc-vonage-2022",
+      "company": "Vonage",
+      "domains": [
+        "vonage.com"
+      ],
+      "pattern": "Roach Motel (Hard to Cancel)",
+      "summary": "In 2022 the US Federal Trade Commission alleged that Vonage put obstacles in the way of customers trying to cancel and kept charging them after they asked to cancel. The company settled.",
+      "source": "US Federal Trade Commission, FTC v. Vonage Holdings Corp. (settled November 2022)"
+    },
+    {
+      "id": "ftc-epic-games-2022",
+      "company": "Epic Games",
+      "domains": [
+        "epicgames.com",
+        "fortnite.com"
+      ],
+      "pattern": "Biased Buttons (confusing button layout)",
+      "summary": "In 2022 the US Federal Trade Commission alleged that Fortnite used a confusing button layout that led players, including children, into unintended purchases. Epic Games settled.",
+      "source": "US Federal Trade Commission, In the Matter of Epic Games, Inc. (settled December 2022)"
+    },
+    {
+      "id": "ftc-grubhub-2024",
+      "company": "Grubhub",
+      "domains": [
+        "grubhub.com"
+      ],
+      "pattern": "Hidden Costs",
+      "summary": "In 2024 the US Federal Trade Commission and the State of Illinois alleged that Grubhub advertised delivery as free or cheap while hiding fees until checkout. The company settled.",
+      "source": "US Federal Trade Commission and Illinois Attorney General, FTC v. Grubhub Inc. (settled December 2024)"
+    },
+    {
+      "id": "accc-microsoft-2025",
+      "company": "Microsoft",
+      "domains": [
+        "microsoft.com",
+        "microsoft365.com"
+      ],
+      "pattern": "Hidden option (Sneaking)",
+      "summary": "In 2025 the Australian Competition and Consumer Commission sued Microsoft, alleging it told Microsoft 365 subscribers their choice was to accept a price rise with Copilot or cancel, without making clear a cheaper 'Classic' plan was still available.",
+      "source": "Australian Competition and Consumer Commission, ACCC v. Microsoft Australia and Microsoft Corporation (filed October 2025)"
     }
   ]
 }

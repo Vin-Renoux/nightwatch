@@ -7,6 +7,7 @@
  *   npm run test:e2e
  *   npm run test:e2e -- --verbose        (show the evidence for every finding)
  *   NIGHTWATCH_BROWSER=/path/to/chrome npm run test:e2e
+ *   NIGHTWATCH_EXTENSION=/path/to/unzipped/package npm run test:e2e   (test a release build)
  *
  * Clicks go through the DevTools protocol, so the page receives trusted input
  * exactly as it would from a person — which matters, because NightWatch tells a
@@ -21,6 +22,8 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
+// Test a built package instead of the source tree: NIGHTWATCH_EXTENSION=/path/to/unzipped
+const EXTENSION = process.env.NIGHTWATCH_EXTENSION ?? ROOT;
 // --verbose prints the evidence behind every finding, not only failures.
 const VERBOSE = process.argv.includes("--verbose");
 const FIXTURES = join(ROOT, "tests", "fixtures");
@@ -187,8 +190,8 @@ async function main() {
       "--window-size=1280,900",
       `--user-data-dir=${profile}`,
       "--remote-debugging-port=0",
-      `--load-extension=${ROOT}`,
-      `--disable-extensions-except=${ROOT}`,
+      `--load-extension=${EXTENSION}`,
+      `--disable-extensions-except=${EXTENSION}`,
       "about:blank",
     ],
     { stdio: "ignore" },
@@ -200,7 +203,7 @@ async function main() {
     const extensionId = await waitForExtension(cdp);
     const storage = await openStorageReader(cdp, extensionId);
 
-    console.log(`NightWatch end-to-end — ${browserPath}\n`);
+    console.log(`NightWatch end-to-end — ${browserPath}\nextension: ${EXTENSION}\n`);
     for (const [index, scenario] of SCENARIOS.entries()) {
       const url = withQuery(`${server.origin}/${scenario.page}`, `run=${index}`);
       const { record, pageOk } = await runScenario(cdp, storage, url, scenario);
