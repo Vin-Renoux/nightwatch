@@ -2,8 +2,8 @@
   "version": "0.5.0",
   "taxonomy": "Gray et al. (2024) five high-level strategies",
   "notes": [
-    "Layer 1 (text) rules only. Each rule maps to exactly one of the five high-level strategies so the popup can group results consistently (brief 6.3).",
-    "Scarcity, urgency, social proof and anchoring are mechanisms rather than strategies in the Gray et al. table, so they sit under Interface Interference (the interface presents misleading information to steer a decision). The 'mechanism' field carries the psychological 'why' from brief 2.",
+    "Layer 1 (text) rules only. Each rule maps to exactly one of the five high-level strategies so the popup can group results consistently.",
+    "Scarcity, urgency, social proof and anchoring are mechanisms rather than strategies in the Gray et al. table, so they sit under Interface Interference (the interface presents misleading information to steer a decision).",
     "Naming: rules describe the tactic, not its truth. NightWatch cannot tell from the page whether a countdown or a stock count is genuine, so nothing is labelled 'false'. Verifying that (e.g. a timer that resets on reload) needs state across visits — a Layer 2 job.",
     "notPatterns drop a match when the surrounding text negates it ('we won't ask for extra fees' is not a hidden cost).",
     "minDistinctPatterns requires that many different patterns to match somewhere on the page before the rule reports. Use it where a single phrase is ambiguous — a header 'Sign in / Register' link is not a login wall.",

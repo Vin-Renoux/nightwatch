@@ -15,7 +15,6 @@ import { crc32, deflateRawSync } from "node:zlib";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 
-// Everything the manifest, service worker and popup load at runtime.
 const INCLUDE = ["manifest.json", "background", "content", "lib", "popup", "rules", "icons"];
 // Development-only files inside those folders.
 const EXCLUDE = new Set(["popup/preview.html"]);
@@ -35,14 +34,12 @@ writeFileSync(outFile, zip);
 console.log(`${relative(ROOT, outFile)}  (${files.length} files, ${(zip.length / 1024).toFixed(1)} KB)`);
 for (const path of files) console.log(`  ${path}`);
 
-// ---------------------------------------------------------------------------
 
 function walk(path) {
   if (statSync(path).isFile()) return [path];
   return readdirSync(path).flatMap((name) => walk(join(path, name)));
 }
 
-/** A standard zip archive (PKWARE APPNOTE): local headers, data, central directory. */
 function buildZip(entries) {
   const locals = [];
   const centrals = [];
@@ -52,15 +49,15 @@ function buildZip(entries) {
   for (const { path, data } of entries) {
     const name = Buffer.from(path, "utf8");
     const deflated = deflateRawSync(data, { level: 9 });
-    const stored = deflated.length >= data.length; // tiny files can grow when compressed
+    const stored = deflated.length >= data.length;
     const body = stored ? data : deflated;
     const checksum = crc32(data);
 
     const local = Buffer.alloc(30);
-    local.writeUInt32LE(0x04034b50, 0); // local file header signature
-    local.writeUInt16LE(20, 4); // version needed to extract
-    local.writeUInt16LE(0x0800, 6); // flags: names are UTF-8
-    local.writeUInt16LE(stored ? 0 : 8, 8); // method: stored or deflate
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0x0800, 6);
+    local.writeUInt16LE(stored ? 0 : 8, 8);
     local.writeUInt16LE(time, 10);
     local.writeUInt16LE(date, 12);
     local.writeUInt32LE(checksum, 14);
@@ -70,9 +67,9 @@ function buildZip(entries) {
     locals.push(local, name, body);
 
     const central = Buffer.alloc(46);
-    central.writeUInt32LE(0x02014b50, 0); // central directory header signature
-    central.writeUInt16LE(20, 4); // version made by
-    central.writeUInt16LE(20, 6); // version needed to extract
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
     central.writeUInt16LE(0x0800, 8);
     central.writeUInt16LE(stored ? 0 : 8, 10);
     central.writeUInt16LE(time, 12);
@@ -81,7 +78,7 @@ function buildZip(entries) {
     central.writeUInt32LE(body.length, 20);
     central.writeUInt32LE(data.length, 24);
     central.writeUInt16LE(name.length, 28);
-    central.writeUInt32LE(offset, 42); // where this file's local header starts
+    central.writeUInt32LE(offset, 42);
     centrals.push(central, name);
 
     offset += local.length + name.length + body.length;
@@ -89,7 +86,7 @@ function buildZip(entries) {
 
   const directory = Buffer.concat(centrals);
   const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50, 0); // end of central directory signature
+  end.writeUInt32LE(0x06054b50, 0);
   end.writeUInt16LE(entries.length, 8);
   end.writeUInt16LE(entries.length, 10);
   end.writeUInt32LE(directory.length, 12);

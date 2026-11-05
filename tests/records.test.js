@@ -30,7 +30,6 @@ test("does not match lookalike or unrelated domains", () => {
   }
 });
 
-// Brief §11: no unverified brand-level claims.
 test("every record is a cited regulator action, worded as an allegation", () => {
   for (const record of data.records) {
     assert.match(record.source, /Commission|Department of Justice|ACCC|Regulat|Authority/, record.id);

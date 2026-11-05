@@ -1,25 +1,5 @@
-/**
- * NightWatch content script — Layer 2 (structure) measurement.
- *
- * Loaded before content-script.js, in the same isolated world. Finds what is
- * floating over the page (pop-ups, banners, prompts), measures the buttons in
- * them, and lists the boxes that are ticked. It only measures: whether any of
- * it is a dark pattern is decided by lib/structural.js in the service worker,
- * where it can be unit-tested (brief §9).
- *
- * Two things can only be known here, at the moment they happen:
- *   - whether a pop-up opened just after a click or key press (the shopper
- *     asked for it) or on its own;
- *   - whether a box was ticked by the shopper or by the site.
- * Both are tracked from trusted input events only, so a page cannot fake a
- * click to make its pop-up look requested.
- */
-
-// One global, because content scripts cannot import modules.
-// eslint-disable-next-line no-unused-vars
 var NightWatchStructure = (() => {
-  // Where to look for things floating over the page: a 5×5 grid across the
-  // viewport, which lands on centred modals, top banners and corner prompts.
+
   const GRID_COLUMNS = [0.1, 0.3, 0.5, 0.7, 0.9];
   const GRID_ROWS = [0.06, 0.28, 0.5, 0.72, 0.94];
   const BEHIND_PROBES = [
@@ -35,9 +15,7 @@ var NightWatchStructure = (() => {
     'button, a[href], [role="button"], [role="link"], input[type="button"], input[type="submit"], [onclick]';
   const BOX_SELECTOR = 'input[type="checkbox"], [role="checkbox"], [role="switch"]';
 
-  // A pop-up that appears this soon after a click or key press was asked for.
   const INTERACTION_GRACE_MS = 2000;
-  // A layer must stay put across two looks this far apart before it is judged.
   const SETTLE_MS = 800;
   const DIMMING_COVERAGE = 0.85;
   const MIN_LAYER_AREA = 3000;
@@ -66,7 +44,7 @@ var NightWatchStructure = (() => {
       if (!event.isTrusted) return;
       const path = event.composedPath();
       const target = path[0];
-      // A click on bare page background or the scrollbar asks for nothing.
+
       if (target instanceof Element && target !== document.body && target !== document.documentElement) {
         noteInteraction();
       }
@@ -102,13 +80,6 @@ var NightWatchStructure = (() => {
       touchedKeys.add(boxKey(box));
     }
 
-    /**
-     * Measure the page.
-     *   declinePattern — the "no" wording, for finding choices in the page itself
-     *   cancelPattern  — cancel/unsubscribe wording, for links that may be hidden
-     *   changedSince   — when the page first changed since the last look, which is
-     *                    when anything new on screen must have appeared
-     */
     function collect({ declinePattern = null, cancelPattern = null, changedSince = 0 } = {}) {
       const now = performance.now();
       const styleOf = memoStyles();
@@ -126,7 +97,7 @@ var NightWatchStructure = (() => {
           layerState.set(layer, state);
         }
         state.sightings += 1;
-        // A toast that flashes past, or a dialog caught mid-animation, is never judged.
+
         if (state.sightings < 2 || now - state.firstSeenAt < SETTLE_MS) {
           pendingConfirm = true;
           continue;
@@ -158,7 +129,7 @@ var NightWatchStructure = (() => {
         boxes.push({
           label,
           checked: true,
-          // Sites re-render checkboxes, so also remember them by name and label.
+
           touched: touchedBoxes.has(box) || touchedKeys.has(boxKey(box, label)),
         });
       }
@@ -168,7 +139,6 @@ var NightWatchStructure = (() => {
     return { collect };
   }
 
-  // -------------------------------------------------------------------------
   // Floating layers
 
   function findLayers(viewport, styleOf) {
@@ -182,8 +152,6 @@ var NightWatchStructure = (() => {
       if (layer) found.add(layer);
     };
 
-    // Every element under each grid point, not just the topmost: pop-ups stack,
-    // and a prompt covered by a later interstitial is still a pop-up.
     for (const fy of GRID_ROWS) {
       for (const fx of GRID_COLUMNS) {
         for (const hit of deepElementsFromPoint(fx * viewport.width, fy * viewport.height)) {
@@ -198,19 +166,12 @@ var NightWatchStructure = (() => {
     const visible = [...found].filter(
       (layer) => isShown(layer) && onScreenArea(layer.getBoundingClientRect(), viewport) >= MIN_LAYER_AREA,
     );
-    // A dialog inside a full-screen mask is one pop-up, not two.
+
     return visible
       .filter((layer) => !visible.some((other) => other !== layer && composedContains(other, layer)))
       .slice(0, MAX_LAYERS);
   }
 
-  /**
-   * The pop-up a point on screen belongs to: its outermost fixed-position
-   * ancestor that has page content behind it. Needing content behind is what
-   * tells a pop-up from an app shell — a site that renders its whole page in
-   * one fixed container, with nothing underneath — while still finding a modal
-   * opened *inside* such a shell.
-   */
   function floatingLayer(start, viewport, styleOf, behindCache) {
     const candidates = [];
     for (let node = start; node instanceof Element; node = composedParent(node)) {
@@ -251,10 +212,8 @@ var NightWatchStructure = (() => {
 
   function describeLayer(layer, state, viewport, styleOf) {
     const rect = layer.getBoundingClientRect();
-    // Fixed when first reported, so the evidence for one pop-up reads the same on every look.
     state.dims ??=
       dimsPage(layer, styleOf(layer), viewport) ||
-      // The dimming is often a child of the pop-up's container rather than the container itself.
       [...layer.children].some((child) => dimsPage(child, styleOf(child), viewport));
     return {
       rect: {
@@ -276,14 +235,13 @@ var NightWatchStructure = (() => {
     };
   }
 
-  /** Does this element dim or blur the whole page behind it? */
   function dimsPage(element, style, viewport) {
     try {
       if (element.matches("dialog") && element.matches(":modal")) {
         return alphaOf(getComputedStyle(element, "::backdrop").backgroundColor) > 0.05;
       }
     } catch {
-      // :modal unsupported — fall through to the geometry check.
+      //Fall through to the geometry check.
     }
     const area = onScreenArea(element.getBoundingClientRect(), viewport);
     if (area < DIMMING_COVERAGE * viewport.width * viewport.height) return false;
@@ -296,7 +254,6 @@ var NightWatchStructure = (() => {
     return element.matches(MODAL_SELECTOR) || element.tagName === "DIALOG";
   }
 
-  // -------------------------------------------------------------------------
   // Controls
 
   function findControls(layer, styleOf) {
@@ -310,9 +267,6 @@ var NightWatchStructure = (() => {
     const semanticSet = new Set(semantic);
     const clickable = [];
 
-    // Plenty of sites build buttons from <div>s with a pointer cursor and a
-    // click handler. Take the element where the pointer cursor *starts*, not
-    // every child that inherits it.
     const all = layer.querySelectorAll("*");
     if (all.length <= MAX_POINTER_SCAN) {
       for (const element of all) {
@@ -328,16 +282,14 @@ var NightWatchStructure = (() => {
     const visible = [...semantic, ...clickable].filter((element) => isShown(element) && hasBox(element));
     return visible.filter((element) => {
       const holdsOthers = visible.some((other) => other !== element && element.contains(other));
-      // A clickable card holding real buttons is a container, not a choice.
+
       if (holdsOthers && labelFor(element).length > SHORT_LABEL) return false;
-      // An <a> wrapping a <button> is one control, not two: keep the outer one.
       return !visible.some(
         (other) => other !== element && other.contains(element) && labelFor(other).length <= SHORT_LABEL,
       );
     });
   }
 
-  /** Raw computed styles; lib/structural.js turns these into prominence. */
   function measureControl(control, styleOf) {
     const rect = control.getBoundingClientRect();
     const textStyle = styleOf(textCarrier(control) ?? control);
@@ -361,11 +313,9 @@ var NightWatchStructure = (() => {
     };
   }
 
-  /** The element whose background makes this control look like a button. */
   function paintCarrier(control, rect, styleOf) {
     if (isPainted(styleOf(control))) return control;
 
-    // <a class="link"><span class="btn">Shop now</span></a>: the paint is on a child.
     let node = control;
     for (let depth = 0; depth < 2; depth++) {
       const children = [...node.children].filter(hasBox);
@@ -377,7 +327,6 @@ var NightWatchStructure = (() => {
       node = child;
     }
 
-    // <div class="btn"><button class="reset">…</button></div>: the paint is on a hugging parent.
     const parent = control.parentElement;
     if (parent) {
       const parentRect = parent.getBoundingClientRect();
@@ -388,7 +337,6 @@ var NightWatchStructure = (() => {
     return control;
   }
 
-  /** Backgrounds from the nearest ancestor outward, stopping at the first opaque one. */
   function backgroundChain(start, styleOf) {
     const chain = [];
     for (let node = start; node instanceof Element && chain.length < 12; node = composedParent(node)) {
@@ -417,8 +365,7 @@ var NightWatchStructure = (() => {
     return null;
   }
 
-  // -------------------------------------------------------------------------
-  // Choices in the page itself (not in a pop-up)
+  // Choices in the page itself
 
   function findInlineChoices(layers, declinePattern, styleOf) {
     if (!declinePattern) return [];
@@ -427,10 +374,10 @@ var NightWatchStructure = (() => {
 
     for (const element of document.querySelectorAll(CONTROL_SELECTOR)) {
       if (groups.length >= MAX_GROUPS) break;
-      // textContent is cheap; only the few matches get measured.
+
       const quick = clean(element.textContent);
       if (!quick || quick.length > 60 || !declinePattern.test(quick)) continue;
-      if (layers.some((layer) => composedContains(layer, element))) continue; // judged with its pop-up
+      if (layers.some((layer) => composedContains(layer, element))) continue;
       if (!isShown(element) || !hasBox(element)) continue;
 
       const container = choiceContainer(element);
@@ -448,7 +395,6 @@ var NightWatchStructure = (() => {
     return groups;
   }
 
-  /** The nearest ancestor holding this "no" with its "yes", and little else. */
   function choiceContainer(element) {
     let node = element.parentElement;
     for (let depth = 0; node && depth < 5; depth++, node = node.parentElement) {
@@ -459,14 +405,8 @@ var NightWatchStructure = (() => {
     return null;
   }
 
-  // -------------------------------------------------------------------------
   // Cancel and unsubscribe links
 
-  /**
-   * Every visible cancel or unsubscribe link, measured. A link removed from the
-   * page entirely cannot be judged here; one left on the page but made easy to
-   * miss can, and that is the pattern.
-   */
   function findCancelLinks(cancelPattern, styleOf) {
     if (!cancelPattern) return [];
     const links = [];
@@ -480,7 +420,6 @@ var NightWatchStructure = (() => {
     return links;
   }
 
-  // -------------------------------------------------------------------------
   // Checkboxes
 
   function boxFromPath(path) {
@@ -494,7 +433,7 @@ var NightWatchStructure = (() => {
 
   function boxIsShown(box) {
     if (isShown(box) && hasBox(box)) return true;
-    // Custom checkboxes hide the real input and draw their own; judge by the label.
+
     if ([...(box.labels ?? [])].some((label) => isShown(label) && hasBox(label))) return true;
     const parent = box.parentElement;
     return Boolean(parent && isShown(parent) && hasBox(parent));
@@ -520,7 +459,6 @@ var NightWatchStructure = (() => {
     return `${box.id || box.getAttribute("name") || ""}|${label.slice(0, 60)}`;
   }
 
-  // -------------------------------------------------------------------------
   // DOM helpers
 
   function labelOf(element) {
@@ -530,7 +468,6 @@ var NightWatchStructure = (() => {
     return label.slice(0, MAX_LABEL);
   }
 
-  /** Everything under a point, top to bottom, including inside open shadow roots. */
   function deepElementsFromPoint(x, y) {
     const stack = [];
     for (const element of document.elementsFromPoint(x, y)) {
@@ -574,7 +511,6 @@ var NightWatchStructure = (() => {
     return alphaOf(style.backgroundColor) > 0.05 || style.backgroundImage !== "none";
   }
 
-  /** Alpha of a computed colour; just enough parsing to tell clear from solid. */
   function alphaOf(color) {
     if (!color || color === "transparent") return 0;
     const slash = /\/\s*([\d.]+)(%?)\s*\)$/.exec(color);

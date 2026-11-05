@@ -1,16 +1,5 @@
-/**
- * NightWatch content script — page-side signal extraction.
- *
- * Collects what the service worker needs to judge the page (brief §3):
- *   - Layer 1: the visible text, split into segments;
- *   - Layer 2: measurements of pop-ups, buttons and ticked boxes, taken by
- *     content/structure.js, which the manifest loads just before this file.
- * All classification happens in the service worker. Keeping the page-side
- * work this small matters for the low-resource-device goal in §11.
- */
-
-// Keep in sync with SEARCH_HOST_PATTERNS in lib/scope.js — content scripts
-// cannot import ES modules, and tests/scope.test.js checks the two match.
+// Keep in sync with SEARCH_HOST_PATTERNS in lib/scope.js.
+// tests/scope.test.js checks the two match.
 const SEARCH_HOST_PATTERNS = [
   /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/,
   /(^|\.)bing\.com$/,
@@ -36,26 +25,18 @@ const SKIP_TAGS = new Set([
 const MIN_SEGMENT_CHARS = 3;
 const MAX_SEGMENT_CHARS = 400;
 const MAX_SEGMENTS = 1500;
-// Product photos often carry the whole product title as alt text; badges are short.
 const MAX_ALT_CHARS = 60;
 
-// Rescans after the page changes: quick at first, then backing off, so a tab
-// left open on a ticking countdown costs little.
+// Rescans after the page changes
 const RESCAN_DEBOUNCE_MS = 800;
 const RESCAN_MAX_WAIT_MS = 4000;
 const SLOW_RESCAN_DEBOUNCE_MS = 3000;
 const SLOW_RESCAN_MAX_WAIT_MS = 12000;
 const FAST_RESCANS = 20;
 const MAX_RESCANS = 60;
-// A click often opens a checkout step or a panel without changing the URL, so
-// it buys a few more looks even after the budget is spent.
 const RESCANS_PER_INTERACTION = 5;
-// A newly seen pop-up is judged on a second look this long after the first.
 const CONFIRM_DELAY_MS = 1200;
 const MAX_CONFIRMS = 15;
-
-// Pop-ups are usually already in the page, hidden, and shown by flipping one
-// of these — which a childList-only observer never sees.
 const WATCHED_ATTRIBUTES = [
   "class",
   "style",
@@ -82,11 +63,11 @@ function start() {
   let maxWaitTimer = null;
   let confirmTimer = null;
   let watching = false;
-  let previousScanAt = 0; // performance.now() of the last look; 0 is navigation start
-  let changedSince = null; // when the page first changed after the last look
+  let previousScanAt = 0;
+  let changedSince = null;
   let configPromise = requestStructureConfig();
 
-  // If structure.js failed to load, keep the text checks running without it.
+  // If structure.js failed to load, keep the text checks running without it
   const collector = globalThis.NightWatchStructure?.create({ onInteraction: extendBudget }) ?? null;
   const observer = new MutationObserver(onMutation);
 
@@ -97,7 +78,7 @@ function start() {
   }
 
   observe();
-  // Single-page navigations (clicking a product) change the URL without a reload.
+
   addEventListener("popstate", checkForNavigation);
 
   function onMutation() {
@@ -109,7 +90,7 @@ function start() {
   function checkForNavigation() {
     if (location.href === lastUrl) return false;
     lastUrl = location.href;
-    rescans = 0; // new page, fresh budget
+    rescans = 0;
     confirmsLeft = MAX_CONFIRMS;
     clearTimers();
     observe();
@@ -122,8 +103,6 @@ function start() {
     const slow = rescans >= FAST_RESCANS;
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(runRescan, slow ? SLOW_RESCAN_DEBOUNCE_MS : RESCAN_DEBOUNCE_MS);
-    // A live countdown mutates every second, which would reset the debounce
-    // forever and mean the page is never rescanned. Force one through.
     if (maxWaitTimer === null) {
       maxWaitTimer = setTimeout(runRescan, slow ? SLOW_RESCAN_MAX_WAIT_MS : RESCAN_MAX_WAIT_MS);
     }
@@ -179,9 +158,6 @@ function start() {
   }
 
   async function scan(reason) {
-    // Anything new on screen appeared after the page first changed since the
-    // last look — which is what tells a pop-up the shopper clicked open from
-    // one that opened by itself.
     const since = changedSince ?? previousScanAt;
     changedSince = null;
     previousScanAt = performance.now();
@@ -211,12 +187,12 @@ function start() {
         structure,
       })
       .catch(() => {
-        // Service worker asleep or page unloading — the next scan will retry.
+        // Scan will retry
       });
   }
 }
 
-/** The "no" and "cancel" wording from rules/structural-rules.json, one pattern each. */
+//The "no" and "cancel" wording from rules/structural-rules.json
 function requestStructureConfig() {
   return chrome.runtime
     .sendMessage({ type: "NW_GET_STRUCTURE_CONFIG" })
@@ -231,7 +207,7 @@ function requestStructureConfig() {
     .catch(() => ({ declinePattern: null, cancelPattern: null, retry: true }));
 }
 
-// One combined pattern, so each link on a big page costs one test, not twenty.
+// One combined pattern
 function combine(sources) {
   return sources.length ? new RegExp(sources.map((source) => `(?:${source})`).join("|"), "i") : null;
 }
@@ -246,7 +222,6 @@ function hasStructure(structure) {
   );
 }
 
-/** Every distinct piece of visible text on the page, as separate segments. */
 function extractVisibleText() {
   if (!document.body) return [];
 
@@ -261,7 +236,7 @@ function extractVisibleText() {
     const parent = node.parentElement;
     if (!parent || SKIP_TAGS.has(parent.tagName)) continue;
 
-    // Straighten curly apostrophes so "Don’t" matches the same rules as "Don't".
+    // Straighten curly apostrophes
     const text = node.nodeValue
       .replace(/[‘’]/g, "'")
       .replace(/\s+/g, " ")
@@ -273,8 +248,6 @@ function extractVisibleText() {
     segments.push(text.slice(0, MAX_SEGMENT_CHARS));
   }
 
-  // Some badges ("AMAZING FIND", "Best seller") are pictures of words. Their
-  // alt text is what a screen reader announces, so treat it as page wording.
   for (const image of document.images) {
     if (segments.length >= MAX_SEGMENTS) break;
     const alt = (image.alt ?? "").replace(/\s+/g, " ").trim();

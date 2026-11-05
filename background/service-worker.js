@@ -1,12 +1,3 @@
-/**
- * NightWatch service worker — classification and state.
- *
- * Content scripts send page text and layout measurements here; this runs the
- * Layer 1 (wording) and Layer 2 (structure) rules over them, accumulates the
- * result for that page in chrome.storage.local, and answers the popup.
- * Nothing leaves the browser (brief §11).
- */
-
 import { classifySegments, compileRules, foldScan } from "../lib/classifier.js";
 import { PAGE_KEY_PREFIX, isScannable, storageKeyFor } from "../lib/scope.js";
 import { createSerialQueue } from "../lib/serial-queue.js";
@@ -22,7 +13,6 @@ const compiledRules = new Map();
 const textRules = () => loadRules(TEXT_RULES_PATH, compileRules);
 const structureRules = () => loadRules(STRUCTURE_RULES_PATH, compileStructuralRules);
 
-// One page at a time: see lib/serial-queue.js for what went wrong without it.
 const pageQueue = createSerialQueue();
 
 chrome.action.setBadgeBackgroundColor({ color: "#c0392b" });
@@ -39,12 +29,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.error("[NightWatch] failed to classify page:", error);
         sendResponse({ ok: false, error: String(error) });
       });
-    return true; // keep the message channel open for the async reply
+    return true;
   }
 
   if (message?.type === "NW_GET_STRUCTURE_CONFIG") {
-    // Content scripts cannot fetch extension files without exposing them to
-    // every website, so they ask for the wording they need instead.
     structureRules()
       .then((rules) =>
         sendResponse({
@@ -67,7 +55,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-/** Load and compile a rules file once per service-worker lifetime. */
 function loadRules(path, compile) {
   if (!compiledRules.has(path)) {
     const loading = fetch(chrome.runtime.getURL(path))
@@ -77,7 +64,7 @@ function loadRules(path, compile) {
       })
       .then(compile)
       .catch((error) => {
-        compiledRules.delete(path); // let the next message retry rather than caching a failure
+        compiledRules.delete(path);
         throw error;
       });
     compiledRules.set(path, loading);
@@ -96,11 +83,7 @@ async function handlePageSignals(message, sender) {
   const layout = classifyStructure(message.structure, structure);
   const tabId = sender.tab?.id;
 
-  // Read, merge, write and badge as one unit. Interleaving these with another
-  // scan of the same page is what left the badge and the popup disagreeing.
   const findings = await pageQueue(key, async () => {
-    // Merge rather than replace: a rescan can catch the page mid-rebuild with
-    // less text than before, and replacing would wipe real detections.
     const previous = await readRecord(key);
     const folded = foldScan(previous, [...wording, ...layout.findings], layout.supersedes);
 
@@ -138,7 +121,6 @@ async function writeRecord(key, record) {
   await pruneStoredPages();
 }
 
-/** Keep local storage bounded — drop the least recently scanned pages. */
 async function pruneStoredPages() {
   const everything = await chrome.storage.local.get(null);
   const keys = Object.keys(everything).filter((key) => key.startsWith(PAGE_KEY_PREFIX));
@@ -152,6 +134,6 @@ async function updateBadge(tabId, count) {
   try {
     await chrome.action.setBadgeText({ tabId, text: count > 0 ? String(count) : "" });
   } catch {
-    // Tab was closed while we were classifying.
+    // Tab was closed while classifying.
   }
 }

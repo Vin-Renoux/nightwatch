@@ -1,10 +1,3 @@
-/**
- * NightWatch popup — renders the patterns the service worker found.
- *
- * All page-derived strings go in via textContent, never innerHTML: evidence
- * quotes are untrusted text lifted straight off the site being scanned.
- */
-
 import { groupByCategory } from "../lib/classifier.js";
 import { recordsFor } from "../lib/records.js";
 import { friendlyUrl, skipReason, storageKeyFor } from "../lib/scope.js";
@@ -23,16 +16,6 @@ const SEVERITY_LABELS = {
   low: "Lower concern",
 };
 
-// The Gray et al. (2024) strategy names are research terms; say what each means.
-// const CATEGORY_BLURBS = {
-//   "Interface Interference": "Design that steers your choice",
-//   Sneaking: "Things added or hidden without asking",
-//   Obstruction: "Making it hard to leave or say no",
-//   "Forced Action": "Making you do something before you can continue",
-//   Nagging: "Interrupting you to get a yes",
-// };
-
-// Which detection layer found it — the hybrid approach in brief §1, made visible.
 const LAYER_LABELS = {
   text: { label: "Wording", title: "Found by reading what the page says" },
   structure: { label: "Layout", title: "Found by checking how the page is built" },
@@ -44,7 +27,6 @@ const recordsEl = document.querySelector("#records");
 const contextEl = document.querySelector("#context");
 const themeToggle = document.querySelector("#theme-toggle");
 
-// Findings the shopper has opened, kept open when a rescan redraws the list.
 const openFindings = new Set();
 let storageKey = null;
 
@@ -73,8 +55,6 @@ async function init() {
 
   render(response.record, url);
 
-  // A rescan can land while the popup is sitting open — follow it rather than
-  // leaving a stale count on screen while the toolbar badge moves on without us.
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local" || !storageKey) return;
     const change = changes[storageKey];
@@ -82,7 +62,6 @@ async function init() {
   });
 }
 
-// ---------------------------------------------------------------------------
 // Theme
 
 async function initTheme() {
@@ -107,7 +86,6 @@ function applyTheme(theme) {
   themeToggle.setAttribute("aria-pressed", String(theme === "light"));
 }
 
-// ---------------------------------------------------------------------------
 // Rendering
 
 function render(record, url) {
@@ -115,8 +93,6 @@ function render(record, url) {
   contextEl.replaceChildren();
 
   if (!record) {
-    // Content scripts do not run on local files unless the user turns on
-    // "Allow access to file URLs", which is easy to miss when testing fixtures.
     showNote(
       url.startsWith("file:")
         ? "Nothing scanned here yet. For local files, turn on “Allow access to file URLs” on the NightWatch card in chrome://extensions, then reload the page."
@@ -168,15 +144,11 @@ function renderCategory({ category, findings }) {
   const head = element("div", "", "category-head");
   head.append(element("h2", category), element("span", String(findings.length), "category-count"));
   section.append(head);
-//
-//   const blurb = CATEGORY_BLURBS[category];
-//   if (blurb) section.append(element("p", blurb, "category-blurb"));
 
   for (const finding of findings) section.append(renderFinding(finding));
   return section;
 }
 
-/** One collapsible row: the pattern's name up front, the detail on demand. */
 function renderFinding(finding) {
   const details = element("details", "", `finding severity-${finding.severity}`);
   details.open = openFindings.has(finding.id);
@@ -199,7 +171,7 @@ function renderFinding(finding) {
     seen.title = `Seen ${finding.matchCount} times on this page`;
     summary.append(seen);
   }
-  // Colour alone never carries meaning: say the severity for screen readers.
+
   summary.append(element("span", SEVERITY_LABELS[finding.severity] ?? "", "visually-hidden"));
   summary.append(chevron());
   details.append(summary);
@@ -209,10 +181,10 @@ function renderFinding(finding) {
   mechanism.append(element("span", "Plays on "), document.createTextNode(finding.mechanism));
   body.append(mechanism, element("p", finding.explanation, "explanation"));
 
+
   if (finding.evidence.length > 0) {
+    // Wording evidence is quoted straight off the page
     const list = element("ul", "", "evidence");
-    // Wording evidence is quoted straight off the page; layout evidence is
-    // NightWatch's own description of what it measured, so it is not.
     const quoted = finding.layer !== "structure";
     for (const line of finding.evidence) list.append(element("li", quoted ? `“${line}”` : line));
     body.append(list);

@@ -45,8 +45,7 @@ test("rule ids are unique", () => {
 });
 
 test("no rule claims a pattern is false, only that it applies pressure", () => {
-  // NightWatch cannot verify a countdown or stock count from the page, so the
-  // wording must not assert falsity (brief §11).
+
   for (const rule of rules) {
     assert.doesNotMatch(rule.approach, /\bfalse\b/i, `${rule.id} approach asserts falsity`);
   }

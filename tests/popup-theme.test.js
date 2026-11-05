@@ -1,9 +1,3 @@
-/**
- * Contrast checks for the popup's two themes (brief §11: the popup has to be
- * readable for older users and people with low vision, not just look good).
- * Reads the colour variables straight out of popup/popup.css.
- */
-
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

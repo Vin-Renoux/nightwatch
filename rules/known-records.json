@@ -2,9 +2,9 @@
   "version": "0.2.0",
   "notes": [
     "Documented regulator actions over hard-to-cancel subscriptions — the 'hidden unsubscribe / roach motel' pattern that a single page view cannot show.",
-    "Brief §11: no unverified brand-level claims. Only legal actions by a regulator belong here, worded as what was alleged, with the agency, case and date. Never a review site, a forum, or NightWatch's own detections.",
+    "No unverified brand-level claims. Only legal actions by a regulator belong here, worded as what was alleged, with the agency, case and date. Never a review site, a forum, or NightWatch's own detections.",
     "Shown in the popup as background about the company, separately from what was detected on the page, and never counted in the badge.",
-    "Bundled with the extension: nothing is looked up online (brief §4). Before relying on an entry in the report, check it against the regulator's own announcement and add its URL to 'source'."
+    "Bundled with the extension: nothing is looked up online. Before relying on an entry in the report, check it against the regulator's own announcement and add its URL to 'source'."
   ],
   "records": [
     {

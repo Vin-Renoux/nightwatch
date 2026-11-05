@@ -1,16 +1,4 @@
-/*
- * NightWatch popup. Plain CSS, no framework and no web fonts — the extension
- * has to stay light (brief §11).
- *
- * Two themes, chosen with the toggle in the header and remembered in
- * chrome.storage.local:
- *   night (default) — the brand: a starry sky and moonlight-gold accents;
- *   day             — the same layout on warm paper, for bright rooms.
- * tests/popup-theme.test.js checks the text colours in both blocks below
- * against WCAG contrast, so keep each theme's colours inside its block.
- */
-
-/* ---------- night theme ---------- */
+/* night theme  */
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -42,7 +30,7 @@
   --sky-edge: transparent;
 }
 
-/* ---------- day theme ---------- */
+/* light theme */
 :root[data-theme="light"] {
   color-scheme: light;
 
@@ -73,8 +61,6 @@
   --sky-edge: #e4ddcc;
 }
 
-/* Hold the page back until popup.js has applied the saved theme, so a day-mode
-   user never sees a flash of night. Shown anyway after 300 ms if that fails. */
 html:not([data-theme]) body {
   visibility: hidden;
   animation: reveal 0s 300ms forwards;
@@ -116,7 +102,7 @@ body {
   outline-offset: 2px;
 }
 
-/* ---------- header: the night sky ---------- */
+/* header */
 
 .sky {
   position: sticky;
@@ -132,7 +118,6 @@ body {
   overflow: hidden;
 }
 
-/* A scatter of stars, drawn with gradients rather than an image. */
 .sky::before {
   content: "";
   position: absolute;
@@ -204,7 +189,6 @@ body {
   stroke: none;
 }
 
-/* Show the mode you would switch *to*. */
 .theme-toggle .icon-moon,
 :root[data-theme="light"] .theme-toggle .icon-sun {
   display: none;
@@ -214,7 +198,7 @@ body {
   display: block;
 }
 
-/* ---------- summary ---------- */
+/* summary */
 
 .summary {
   margin: 14px 14px 4px;
@@ -299,7 +283,7 @@ body {
   color: var(--ink-soft);
 }
 
-/* ---------- on record ---------- */
+/* on record */
 
 .records {
   margin: 12px 14px 0;
@@ -355,7 +339,7 @@ body {
   color: var(--ink-faint);
 }
 
-/* ---------- categories ---------- */
+/* categories */
 
 .results {
   padding: 0 14px;
@@ -394,7 +378,7 @@ body {
   color: var(--ink-faint);
 }
 
-/* ---------- findings ---------- */
+/* findings */
 
 .severity-high {
   --sev: var(--sev-high);
@@ -421,7 +405,6 @@ body {
   margin-top: 7px;
 }
 
-/* The severity bar down the left edge. */
 .finding::before {
   content: "";
   position: absolute;
@@ -538,7 +521,6 @@ body {
   color: var(--ink-faint);
 }
 
-/* A smooth open and close where the browser supports animating <details>. */
 @media (prefers-reduced-motion: no-preference) {
   @supports selector(::details-content) {
     :root {
@@ -556,8 +538,6 @@ body {
     }
   }
 }
-
-/* ---------- footer ---------- */
 
 .context {
   margin: 16px 16px 8px;

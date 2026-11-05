@@ -1,19 +1,3 @@
-#!/usr/bin/env node
-/**
- * End-to-end checks: load the real extension into a headless browser, open the
- * fixture pages, click where a shopper would, and read back what NightWatch
- * stored for each page. Not part of `npm test`, because it needs a browser.
- *
- *   npm run test:e2e
- *   npm run test:e2e -- --verbose        (show the evidence for every finding)
- *   NIGHTWATCH_BROWSER=/path/to/chrome npm run test:e2e
- *   NIGHTWATCH_EXTENSION=/path/to/unzipped/package npm run test:e2e   (test a release build)
- *
- * Clicks go through the DevTools protocol, so the page receives trusted input
- * exactly as it would from a person — which matters, because NightWatch tells a
- * pop-up the shopper opened apart from one that opened by itself.
- */
-
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
@@ -22,9 +6,9 @@ import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
-// Test a built package instead of the source tree: NIGHTWATCH_EXTENSION=/path/to/unzipped
+
 const EXTENSION = process.env.NIGHTWATCH_EXTENSION ?? ROOT;
-// --verbose prints the evidence behind every finding, not only failures.
+
 const VERBOSE = process.argv.includes("--verbose");
 const FIXTURES = join(ROOT, "tests", "fixtures");
 const BROWSER_CANDIDATES = [
@@ -39,11 +23,6 @@ const BROWSER_CANDIDATES = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 ];
 
-/**
- * Each scenario opens one fixture. `exactly` lists every rule id that must be
- * stored for the page — anything missing or extra fails. `actions` are clicks
- * at a time after the page starts loading. `check` adds any further assertion.
- */
 const SCENARIOS = [
   {
     name: "Layer 1 — product page wording",
@@ -89,14 +68,14 @@ const SCENARIOS = [
   {
     name: "Layer 2 — pop-up and box the shopper opened and ticked",
     page: "mock-prompted.html",
-    // Tick the box first: once the size guide is open, its mask covers the page.
+
     actions: [
       { at: 2000, click: "#newsletter-label" },
       { at: 3500, click: "#size-guide" },
     ],
     settle: 8000,
     exactly: [],
-    // Without this, a click that missed would pass with nothing to report.
+
     pageCheck: `document.getElementById("guide").classList.contains("open") &&
       document.querySelector('input[name="newsletter"]').checked`,
     check: (record) => (record?.findings ? null : "no record was stored — the page was never scanned"),
@@ -139,7 +118,7 @@ const SCENARIOS = [
     check: (record) => {
       const badges = record?.findings?.find((finding) => finding.id === "social-proof-badges");
       if (!badges) return "social-proof-badges missing";
-      // Read from <img alt>, so this proves picture badges are seen.
+
       if (badges.matchCount < 5) return `only ${badges.matchCount} of 5 badges seen`;
       return null;
     },
@@ -165,8 +144,6 @@ function expectCount(record, id, count) {
   if (!finding) return `${id} missing`;
   return finding.matchCount === count ? null : `${id} seen ${finding.matchCount}×, expected ${count}×`;
 }
-
-// ---------------------------------------------------------------------------
 
 async function main() {
   const browserPath = BROWSER_CANDIDATES.find((path) => path && existsSync(path));
@@ -215,7 +192,7 @@ async function main() {
     failures += 1;
     console.error(error);
   } finally {
-    // The browser keeps writing to its profile while it shuts down.
+
     const exited = new Promise((resolve) => browser.once("exit", resolve));
     browser.kill();
     await Promise.race([exited, sleep(5000)]);
@@ -224,8 +201,6 @@ async function main() {
   }
   return failures ? 1 : 0;
 }
-
-// ---------------------------------------------------------------------------
 
 async function runScenario(cdp, storage, url, scenario) {
   const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank" });
@@ -273,7 +248,6 @@ async function evaluate(cdp, sessionId, expression) {
   return result.value;
 }
 
-/** A trusted click in the middle of the element. */
 async function click(cdp, sessionId, selector) {
   const { result } = await cdp.send(
     "Runtime.evaluate",
@@ -300,7 +274,6 @@ async function click(cdp, sessionId, selector) {
   }
 }
 
-/** Mirrors storageKeyFor() in lib/scope.js. */
 function storageKey(url) {
   const parsed = new URL(url);
   parsed.hash = "";
@@ -323,10 +296,6 @@ async function waitForExtension(cdp) {
   throw new Error("the extension's service worker never started — check the manifest loads");
 }
 
-/**
- * Reads chrome.storage from an extension page rather than the service worker,
- * which the browser may stop whenever it is idle.
- */
 async function openStorageReader(cdp, extensionId) {
   const { targetId } = await cdp.send("Target.createTarget", {
     url: `chrome-extension://${extensionId}/popup/popup.html`,
@@ -384,7 +353,6 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }
 
-/** A minimal DevTools protocol client over Node's built-in WebSocket. */
 class Cdp {
   static async connect(url) {
     const socket = new WebSocket(url);
